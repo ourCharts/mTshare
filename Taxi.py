@@ -1,11 +1,12 @@
 class Taxi(object):
 	__schedule_list = []
-	def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, mobility_vector=None):
+	def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, mobility_vector=None):
 		self.taxi_id = taxi_id
 		self.cur_lon = cur_lon
 		self.cur_lat = cur_lat
 		self.__schedule_list = []
 		self.__last_update_time = init_last_update_time
+		self.partition_id_belongto = partition_id_belongto
 		self.mobility_vector = mobility_vector
 	
 	def update_status(self, moment):

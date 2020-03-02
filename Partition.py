@@ -10,13 +10,13 @@ logger.addHandler(handle)
 
 class Partition(object):
     __node_list = []
-    def __init__(self, partition_id, landmark_node_id, landmark_lon, landmark_lat):
+    def __init__(self, partition_id, landmark_node_id, landmark_lon, landmark_lat, node_list, taxi_list):
         self.partition_id = partition_id
         self.landmark_node_id = landmark_node_id
         self.landmark_lon = landmark_lon
         self.landmark_lat = landmark_lat
-        self.__node_list = []
-        self.__taxi_list = []
+        self.__node_list = node_list
+        self.__taxi_list = taxi_list
     def update_taxi_list(self, taxi_id, op_type):
         if op_type  == 'APPEND':
             self.__taxi_list.append(taxi_id)

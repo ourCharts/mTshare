@@ -10,18 +10,15 @@ logger.addHandler(handle)
 
 class Partition(object):
     __node_list = []
-    def __init__(self, partition_id, landmark_node_id, landmark_lon, landmark_lat, node_list, taxi_list):
+    def __init__(self, partition_id, node_list, taxi_list):
         self.partition_id = partition_id
-        self.landmark_node_id = landmark_node_id
-        self.landmark_lon = landmark_lon
-        self.landmark_lat = landmark_lat
-        self.__node_list = node_list
-        self.__taxi_list = taxi_list
+        self.node_list = node_list
+        self.taxi_list = taxi_list
     def update_taxi_list(self, taxi_id, op_type):
         if op_type  == 'APPEND':
-            self.__taxi_list.append(taxi_id)
+            self.taxi_list.append(taxi_id)
         elif op_type == 'REMOVE':
             try:
-                self.__taxi_list.remove(taxi_id)
+                self.taxi_list.remove(taxi_id)
             except ValueError:
                 logger.error('Can\'t remove the taxi. Maybe the taxi doesn\'t exist in the partition')

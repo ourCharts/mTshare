@@ -120,7 +120,7 @@ def system_init():
     for idx, node_it in enumerate(node_list):
         real_id = node_it.node_id
         tmp_list.append((idx, real_id))
-    id_hash_map = dict(tmp_list)
+    id_hash_map = dict(tmp_list)#ok
     
     for taxi_it in taxi_table.index:
         tmp = taxi_table.loc[taxi_it]

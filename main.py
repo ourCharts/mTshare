@@ -232,6 +232,8 @@ def taxi_req_matching(req: Request):
 
     partition_intersected = set()
     for node_it in node_list:
+        if node_it.cluster_id_belongto in partition_intersected:
+            continue
         dis = get_distance(u_lon, u_lat, node_it.lon, node_it.lat)
         if dis <= search_range:
             partition_intersected.add(node_it.cluster_id_belongto)
@@ -262,6 +264,7 @@ def taxi_req_matching(req: Request):
     """
     TODO
     1. 完成所有的matching的剩余部分, 即从候选taxi列表中, 通过minimum detour cost, 选出最合适的taxi
+        记得考虑空taxi
     2. 检查今天写的代码是否有bug
     """
 

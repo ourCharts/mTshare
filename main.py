@@ -87,20 +87,15 @@ def get_an_order(idx):
     return ret
 
 
-def get_neareast_landmark(lon, lat):
-    min_dis = int(1e10)
-    ret = -1
-    for idx, landmark_it in enumerate(landmark_list):
-        dis = get_distance(lon, lat, landmark_it[0], landmark_it[1])
-        if dis < min_dis:
-            min_dis = dis
-            ret = idx
+def check_in_which_partition(lon, lat):
+    ret = ox.get_nearest_node(osm_map, (lat, lon))
+    ret = id_hash_map[ret]
     return ret
 
 
 def system_init():
     taxi_table = pd.read_csv('./data/taxi_info_list.csv') # 晚点添加这个文件, 里面是taxi的基本信息, 包括每辆taxi的编号和初始经纬度
-    # 初始化node_list
+    # 初始化node_list, node_list中放的是Node对象
     df = pd.read_csv('./data/node_list_with_cluster.csv')
     for indexs in df.index:
         tmp = df.loc[indexs]
@@ -129,17 +124,19 @@ def system_init():
     
     for taxi_it in taxi_table.index:
         tmp = taxi_table.loc[taxi_it]
-        taxi_in_which_partition = get_neareast_landmark(tmp['cur_lon'], tmp['cur_lat'])
+        taxi_in_which_partition = check_in_which_partition(tmp['cur_lon'], tmp['cur_lat'])
         taxi_list.append(
             Taxi(tmp['taxi_id'], tmp['cur_lon'], tmp['cur_lat'], SYSTEM_INIT_TIME - TIME_OFFSET, partition_id_belongto=taxi_in_which_partition))
         partition_list[taxi_in_which_partition].taxi_list.append(tmp['taxi_id'])
-    
-    clusters = df.loc[:, 'cluster_id']
-    hash_mp = dict([(i, False) for i in range(max(clusters))])
 
-    node_distance_matrix = [None] * len(node_list)
-    for i in range(len(node_distance_matrix)):
-        node_distance_matrix[i] = [None] * len(node_list) 
+    # 初始化邻接矩阵
+    node_num = len(node_list)
+    node_distance_matrix = [None] * node_num
+    for i in range(node_num):
+        node_distance_matrix[i] = [None] * len(node_num) 
+    for i in range(node_num):
+        for j in range(node_num):
+            node_distance_matrix[i][j] = node_distance.iloc[i, j]
 
 
 def request_fetcher(time_slot_start, time_slot_end):
@@ -216,6 +213,12 @@ def update(request):
                 [MobilityVector(vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id)])
             general_mobility_vector.append(MobilityVector(
                 vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
+    
+    # 重置partition
+    for par_it in partition_list:
+        par_it.taxi_list.clear()
+    for taxi_it in taxi_list:
+        par_it[taxi_it.partition_id_belongto].append(taxi_it.taxi_id)
 
 
 def taxi_req_matching(req: Request):
@@ -223,7 +226,7 @@ def taxi_req_matching(req: Request):
     v_lon, v_lat = req.end_lon, req.end_lat
     nearest_start_id = ox.get_nearest_node(osm_map, (u_lat, u_lon))
     nearest_end_id = ox.get_nearest_node(osm_map, (v_lat, v_lon))
-    delta_t = req.wait_time - node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[nearest_end_id]] - req.release_time
+    delta_t = req.wait_time - node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
     # 得到搜索范围的半径
     search_range = delta_t * TYPICAL_SPEED
 
@@ -262,8 +265,11 @@ def taxi_req_matching(req: Request):
     2. 检查今天写的代码是否有bug
     """
 
+def taxi_scheduling(candidate_taxi_list):
+    pass
 
-def taxi_routing(selected_taxi):
+
+def basic_routing(selected_taxi):
     # 对匹配到的taxi进行路径规划
     pass
 

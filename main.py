@@ -119,8 +119,8 @@ def system_init():
     tmp_list = []
     for idx, node_it in enumerate(node_list):
         real_id = node_it.node_id
-        tmp_list.append((idx, real_id))
-    id_hash_map = dict(tmp_list)#ok
+        tmp_list.append((real_id,idx))
+    id_hash_map = dict(tmp_list)
     
     for taxi_it in taxi_table.index:
         tmp = taxi_table.loc[taxi_it]
@@ -282,8 +282,8 @@ def main():
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
         now_time = time.time() - TIME_OFFSET
-        last_time = now_time
         reqs = request_fetcher(last_time, now_time)
+        last_time = now_time
         if len(reqs) == 0:
             continue
         else:

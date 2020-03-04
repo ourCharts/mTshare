@@ -1,3 +1,5 @@
+from MobilityVector import MobilityVector
+
 class Taxi(object):
 	__schedule_list = []
 	request_list = []
@@ -30,7 +32,7 @@ class Taxi(object):
 			return
 		
 		
-		if index == len(path_node_list)-1 and behind_all_timestamp:   # index等于len-1的时候说明
+		if index == len(self.path_node_list) - 1 and behind_all_timestamp:   # index等于len-1的时候说明
 			(self.cur_lon,self.cur_lat) = (self.path_node_list[index][1], self.path_node_list[index][2])
 			self.path_node_list.clear()
 			self.__schedule_list.clear()
@@ -48,7 +50,3 @@ class Taxi(object):
 		average_lat /= tmp_len
 		average_lon /= tmp_len
 		self.mobility_vector = MobilityVector(self.cur_lon, self.cur_lat, average_lon, average_lat,"TAXI", self.taxi_id)
-
-		
-		
-		

@@ -38,10 +38,12 @@ class Taxi(object):
 			self.__schedule_list.clear()
 			self.request_list.clear()
 			self.mobility_vector = None
-			
-			# 还有partition
-
+			'''
+			# 还有partition_id_belongto
+			'''
 		(self.cur_lon,self.cur_lat) = (self.path_node_list[index-1][1], self.path_node_list[index-1][2])
+
+		# mobility-vector的更新
 		average_lon = average_lat = 0
 		for req in self.request_list:
 			average_lat += req.end_lat

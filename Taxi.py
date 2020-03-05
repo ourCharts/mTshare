@@ -41,7 +41,8 @@ class Taxi(object):
 			'''
 			# 还有partition_id_belongto
 			'''
-		(self.cur_lon,self.cur_lat) = (self.path_node_list[index-1][1], self.path_node_list[index-1][2])
+		(self.cur_lon,self.cur_lat) = (self.path_node_list[index-1][1], self.path_node_list[index-1][2]) 
+		# 这里可以不需要括号
 
 		# mobility-vector的更新
 		average_lon = average_lat = 0

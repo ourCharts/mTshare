@@ -6,13 +6,14 @@ import datetime
 import pandas as pd
 from Node import Node
 from Taxi import Taxi
-import Queue
 from MobilityVector import MobilityVector
 import numpy as np
 from Node import Node
 from Partition import Partition
 import osmnx as ox
 import pickle
+from Tool.Tool import *
+from Path import Path
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -20,11 +21,7 @@ cursor = conn.cursor(pymysql.cursors.SSCursor)
 
 mobility_cluster = []
 general_mobility_vector = []
-map_file = open('./data/map.pickle', 'rb')
-osm_map = pickle.load(map_file) # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
-map_file.close()
 
-id_hash_map = {} # 将节点在地图上的id映射到node_list中的id, 用来快速查找node_list的id
 
 TYPICAL_SPEED = 13.8889  # 单位是m/s
 TAXI_TOTAL_NUM = 100
@@ -61,35 +58,10 @@ def cosine_similarity(x, y):
         return tmp
 
 
-def rad(deg):
-    return (deg / 180.0) * math.pi 
-
-
-def get_distance(lon1, lat1, lon2, lat2):
-    EARTH_RADIUS = 6378.137
-    rad_lat1 = rad(lat1)
-    rad_lat2 = rad(lat2)
-    a = rad_lat1 - rad_lat2
-    rad_lon1 = rad(lon1)
-    rad_lon2 = rad(lon2)
-    b = rad_lon2 - rad_lon1
-    ret = 2 * math.asin(math.sqrt(math.pow(math.sin(a / 2), 2) +
-                                  math.cos(rad_lat1) * math.cos(rad_lat2) * math.pow(math.sin(b / 2), 2)))
-    ret *= EARTH_RADIUS
-    ret = round(ret * 10000) / 10000
-    return ret * 1000
-
-
 def get_an_order(idx):
     sql = 'SELECT * FROM myorder ORDER BY start_time LIMIT %d, 1' % idx
     cursor.execute(sql)
     ret = cursor.fetchall()
-    return ret
-
-
-def check_in_which_partition(lon, lat):
-    ret = ox.get_nearest_node(osm_map, (lat, lon))
-    ret = id_hash_map[ret]
     return ret
 
 
@@ -101,7 +73,8 @@ def system_init():
         tmp = df.loc[indexs]
         node_list.append(
             Node(tmp['real_id'], tmp['lon'], tmp['lat'], tmp['cluster_id']))
-    
+
+    # 初始化landmark_list
     landmark_table = pd.read_csv('./data/landmark.csv') # 晚点添加...里面包含的内容是每个partition的landmark的经纬度.其下标与partition_list的下标一一对应
     landmark_list = zip(landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat'])
     
@@ -114,13 +87,6 @@ def system_init():
             partition_list[cid].node_list.append(node_it.node_id)
         else:
             partition_list[cid].node_list.append(node_it.node_id)
-    
-    # 初始化id_hash_map
-    tmp_list = []
-    for idx, node_it in enumerate(node_list):
-        real_id = node_it.node_id
-        tmp_list.append((real_id,idx))
-    id_hash_map = dict(tmp_list)
     
     for taxi_it in taxi_table.index:
         tmp = taxi_table.loc[taxi_it]
@@ -264,7 +230,7 @@ def taxi_req_matching(req: Request):
     """
     TODO
     1. 完成所有的matching的剩余部分, 即从候选taxi列表中, 通过minimum detour cost, 选出最合适的taxi
-        记得考虑空taxi
+        !!!记得考虑空taxi
     2. 检查今天写的代码是否有bug
     """
 
@@ -274,7 +240,8 @@ def taxi_scheduling(candidate_taxi_list):
 
 def basic_routing(selected_taxi):
     # 对匹配到的taxi进行路径规划
-    pass
+    taxi_path = Path()
+    return taxi_path #一个Path对象
 
 
 def main():

@@ -1,4 +1,4 @@
-class MobilityVector(object):
+class MobilityVector:
     def __init__(self, lon1, lat1, lon2, lat2, vector_type, ID):
         self.lon1 = lon1
         self.lat1 = lat1

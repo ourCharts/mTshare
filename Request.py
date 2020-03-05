@@ -1,4 +1,4 @@
-class Request(object):
+class Request:
     def __init__(self, request_id, start_lon, start_lat, end_lon, end_lat, release_time=None, pickup_time=None, wait_time=None):
         self.request_id = request_id
         self.start_lon = start_lon

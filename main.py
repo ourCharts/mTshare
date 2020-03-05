@@ -208,8 +208,11 @@ def taxi_req_matching(req: Request):
     taxi_in_intersected = []
     for it in partition_intersected:
         for taxi_it in partition_list[it].taxi_list: # partion对象中的taxi_list放的是taxi的id
-            taxi_in_intersected.append(taxi_list[taxi_it].taxi_id) # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
+            if taxi_list[taxi_it].is_available:
+                taxi_in_intersected.append(taxi_list[taxi_it].taxi_id) # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
 
+    if len(taxi_in_intersected) == 0:#在规定时间内没有taxi能来，所以放弃订单
+        return '''放弃订单了'''
     vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
     max_cos = -2
     max_idx = -1
@@ -218,15 +221,25 @@ def taxi_req_matching(req: Request):
         if cos_val > max_cos:
             max_cos = cos_val
             max_idx =  idx
-    C = mobility_cluster[max_idx]
-    # 计算出CaLt
-    C_li = []
-    for it in C:
-        if it.vector_type == 'TAXI':
-            C_li.append(it.ID)
-    # 取交集, 计算出所有候选taxi的list
-    candidate_taxi = set(partition_intersected).intersection(set(C_li))
 
+    if max_idx == -1: #说明cluster为空，所以CaLt是空的
+        candidate_taxi = taxi_in_intersected            
+    else:# 计算出CaLt
+        C = mobility_cluster[max_idx]
+        C_li = []
+        for it in C:
+            if it.vector_type == 'TAXI':
+                C_li.append(it.ID)
+    # 取交集, 计算出所有候选taxi的list
+        candidate_taxi = set(partition_intersected).intersection(set(C_li))
+
+    for taxi_it in candidate_taxi:
+        '''
+            列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
+            问题：
+                1、如何列举不同的插入情况
+                2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
+        '''
     """
     TODO
     1. 完成所有的matching的剩余部分, 即从候选taxi列表中, 通过minimum detour cost, 选出最合适的taxi

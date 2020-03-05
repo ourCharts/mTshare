@@ -29,14 +29,14 @@ class Taxi:
 		# 更新经纬度
 		if not self.path:
 			return
-		(self.cur_lon,self.cur_lat) = self.path.get_position(moment)
+		self.cur_lon, self.cur_lat = self.path.get_position(moment)
 		self.partition_id_belongto = check_in_which_partition(self.cur_lon,self.cur_lat)
 		if self.path.is_over() < 0:
 			self.path = None
 			self.request_list.clear()
 			self.mobility_vector = None
 			return
-
+		
 		# mobility-vector的更新
 		average_lon = average_lat = 0
 		for req in self.request_list:

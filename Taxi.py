@@ -1,48 +1,41 @@
 from MobilityVector import MobilityVector
-
-class Taxi(object):
+from Tool.Tool import *
+from Path import Path
+class Taxi:
 	__schedule_list = []
-	request_list = []
-	# 元素是Request对象
-	path_node_list = []
-	# 元素是(timestamp, lon, lat) 依timestamp递增顺序排序
-	def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, mobility_vector=None):
+	request_list = []# 元素是Request对象
+	def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, mobility_vector=None,path = None):
 		self.taxi_id = taxi_id
 		self.cur_lon = cur_lon
-		self.cur_lat = cur_lat
+		self.cur_lon = cur_lat
 		self.__schedule_list = []
 		self.__last_update_time = init_last_update_time
 		self.partition_id_belongto = partition_id_belongto
 		self.mobility_vector = mobility_vector
+		self.path = path# 元素是(timestamp, lon, lat) 依timestamp递增顺序排序
 	
+	def update_schedule(self, moment):
+		pass
+	'''
+		迟些要更新__schedule_list，要看看后面routing怎么写
+	'''	
+
 	def update_status(self, moment):
-		# 根据moment, __last_update_time和__schedule_list来更新taxi状态
-		# 状态包括, taxi当前位置(经纬度), mobility vector
-		# __last_update_time是用来更新状态的,
+		# 状态： cur_lon、cur_lon、__last_update_time
+		#		 __schedule_list 、partition_id_belongto、mobility_vector
+
 		self.__last_update_time = moment
-		index = -1
-		behind_all_timestamp = True
-		for idx, path_node in enumerate(self.path_node_list):
-			index = idx
-			if moment < path_node[0]:
-				behind_all_timestamp = False
-				break
-		
-		if index == -1:# index==-1说明taxi无线路呆在原位，不用变化
+		self.update_schedule(moment)
+		# 更新经纬度
+		if not self.path:
 			return
-		
-		
-		if index == len(self.path_node_list) - 1 and behind_all_timestamp:   # index等于len-1的时候说明
-			(self.cur_lon,self.cur_lat) = (self.path_node_list[index][1], self.path_node_list[index][2])
-			self.path_node_list.clear()
-			self.__schedule_list.clear()
+		(self.cur_lon,self.cur_lat) = self.path.get_position(moment)
+		self.partition_id_belongto = check_in_which_partition(self.cur_lon,self.cur_lat)
+		if self.path.is_over() < 0:
+			self.path = None
 			self.request_list.clear()
 			self.mobility_vector = None
-			'''
-			# 还有partition_id_belongto
-			'''
-		(self.cur_lon,self.cur_lat) = (self.path_node_list[index-1][1], self.path_node_list[index-1][2]) 
-		# 这里可以不需要括号
+			return
 
 		# mobility-vector的更新
 		average_lon = average_lat = 0

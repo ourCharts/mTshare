@@ -14,6 +14,7 @@ import osmnx as ox
 import pickle
 from Tool.Tool import *
 from Path import Path
+import os
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -36,7 +37,14 @@ taxi_status_queue = []  # taxi的事件队列
 request_list = []
 partition_list = []
 landmark_list = []
-node_distance = pd.read_csv('./data/node_distance.csv') # 该文件存放的是地图上所有道路节点点对之间的最短距离, 晚点放入
+
+files = os.listdir('./data/node_distance/')
+node_distance = pd.read_csv(files[0])
+files.pop(0)
+for file in files:
+    node_distance.append(pd.read_csv(file))
+node_distance = node_distance.loc[:, ~node_distance.columns.str.contains('^Unnamed')]
+
 node_shortest_path = pd.read_csv('./data/node_shortest_path.csv') # 该文件存放的是地图上所有节点点对之间的最短路, 晚点放入 
 node_distance_matrix = []
 

@@ -17,7 +17,7 @@ class Taxi:
 	
 
 	def is_available(self):
-		if seat_left > 0:
+		if self.seat_left > 0:
 			return True
 		return False
 

@@ -15,6 +15,7 @@ import pickle
 from Tool.Tool import *
 from Path import Path
 import os
+import glob
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -38,12 +39,13 @@ request_list = []
 partition_list = []
 landmark_list = []
 
-files = os.listdir('./data/node_distance/')
+files = glob.glob('./data/node_distance/node_distance_*.csv')
 node_distance = pd.read_csv(files[0])
-files.pop(0)
-for file in files:
-    node_distance.append(pd.read_csv(file))
 node_distance = node_distance.loc[:, ~node_distance.columns.str.contains('^Unnamed')]
+for idx in range(1, len(files)):
+    tmp = pd.read_csv(files[idx])
+    tmp = tmp.drop(['Unnamed: 0'], axis=1)
+    node_distance = node_distance.append(tmp)
 
 node_shortest_path = pd.read_csv('./data/node_shortest_path.csv') # 该文件存放的是地图上所有节点点对之间的最短路, 晚点放入 
 node_distance_matrix = []

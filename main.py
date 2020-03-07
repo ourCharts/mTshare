@@ -14,8 +14,11 @@ import osmnx as ox
 import pickle
 from Tool.Tool import *
 from Path import Path
+<<<<<<< HEAD
+=======
 import os
 import glob
+>>>>>>> bacc484f310877c988033a968be4a06b720f9c11
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -121,7 +124,153 @@ def request_fetcher(time_slot_start, time_slot_end):
     cursor.execute(sql)
     ret = cursor.fetchall()
     return ret
+<<<<<<< HEAD
 
+=======
+>>>>>>> bacc484f310877c988033a968be4a06b720f9c11
+
+def update(request):
+    for taxi_it in taxi_list:
+        taxi_it.update_status(request['start_time'])
+    mobility_cluster.clear()
+    general_mobility_vector.clear()
+    Lambda = 0.998
+    for request_it in request_list:
+        vec1 = [request_it.start_lon, request_it.start_lat, request_it.end_lon, request_it.end_lat]
+        max_cos = -2
+        max_idx = -1
+        flag = False
+        for idx, gene_it in enumerate(general_mobility_vector):
+            cos_val = cosine_similarity(gene_it, vec1)
+            # 计算出最相似的那个general_mobility_vector
+            if cos_val > max_cos:
+                max_idx = idx
+                max_cos = cos_val
+        if max_cos >= Lambda:
+            flag = True
+        if flag:
+            mobility_cluster[max_idx].append(MobilityVector(
+                vec1[0], vec1[1], vec1[2], vec1[3], 'REQ', request_it.request_id))
+            x = y = z = w = 0
+            for it in mobility_cluster[max_idx]:
+                x += it[0]
+                y += it[1]
+                z += it[2]
+                w += it[3]
+            leng = len(mobility_cluster[max_idx])
+            general_mobility_vector[max_idx] = MobilityVector(
+                x / leng, y / leng, z / leng, w / leng, 'REQ', request_it.request_id)
+        else:
+            mobility_cluster.append([MobilityVector(
+                vec1[0], vec1[1], vec1[2], vec1[3], 'REQ', request_it.request_id)])
+            general_mobility_vector.append(MobilityVector(
+                vec1[0], vec1[1], vec1[2], vec1[3], 'REQ', request_it.request_id))
+
+    for taxi_it in taxi_list:
+        vec2 = taxi_it.mobility_vector
+        max_cos = -2
+        max_idx = -1
+        flag = False
+        for idx, gene_it in enumerate(general_mobility_vector):
+            cos_val = cosine_similarity(gene_it, vec2)
+            if cos_val > max_cos:
+                max_cos = cos_val
+                max_idx = idx
+        if max_cos >= Lambda:
+            flag = True
+        if flag:
+            mobility_cluster[max_idx].append(MobilityVector(
+                vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
+            x = y = z = w = 0
+            for it in mobility_cluster[max_idx]:
+                x += it[0]
+                y += it[1]
+                z += it[2]
+                w += it[3]
+            leng = len(mobility_cluster[max_idx])
+            general_mobility_vector[max_idx] = MobilityVector(
+                x / leng, y / leng, z / leng, w / leng, 'TAXI', taxi_it.taxi_id)
+        else:
+            mobility_cluster.append(
+                [MobilityVector(vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id)])
+            general_mobility_vector.append(MobilityVector(
+                vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
+    
+    # 重置partition
+    for par_it in partition_list:
+        par_it.taxi_list.clear()
+    for taxi_it in taxi_list:
+        par_it[taxi_it.partition_id_belongto].append(taxi_it.taxi_id)
+
+
+def taxi_req_matching(req: Request):
+    u_lon, u_lat = req.start_lon, req.start_lat
+    v_lon, v_lat = req.end_lon, req.end_lat
+    nearest_start_id = ox.get_nearest_node(osm_map, (u_lat, u_lon))
+    nearest_end_id = ox.get_nearest_node(osm_map, (v_lat, v_lon))
+    delta_t = req.wait_time - node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
+    # 得到搜索范围的半径
+    search_range = delta_t * TYPICAL_SPEED
+
+    partition_intersected = set()
+    for node_it in node_list:
+        if node_it.cluster_id_belongto in partition_intersected:
+            continue
+        dis = get_distance(u_lon, u_lat, node_it.lon, node_it.lat)
+        if dis <= search_range:
+            partition_intersected.add(node_it.cluster_id_belongto)
+
+    # 计算出PzLt
+    taxi_in_intersected = []
+    for it in partition_intersected:
+        for taxi_it in partition_list[it].taxi_list: # partion对象中的taxi_list放的是taxi的id
+            if taxi_list[taxi_it].is_available:
+                taxi_in_intersected.append(taxi_list[taxi_it].taxi_id) # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
+
+    if len(taxi_in_intersected) == 0:#在规定时间内没有taxi能来，所以放弃订单
+        return '''放弃订单了'''
+    vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
+    max_cos = -2
+    max_idx = -1
+    for idx, gene_v in enumerate(general_mobility_vector):
+        cos_val = cosine_similarity(gene_v, vec)
+        if cos_val > max_cos:
+            max_cos = cos_val
+            max_idx =  idx
+
+    if max_idx == -1: #说明cluster为空，所以CaLt是空的
+        candidate_taxi = taxi_in_intersected            
+    else:# 计算出CaLt
+        C = mobility_cluster[max_idx]
+        C_li = []
+        for it in C:
+            if it.vector_type == 'TAXI':
+                C_li.append(it.ID)
+    # 取交集, 计算出所有候选taxi的list
+        candidate_taxi = set(partition_intersected).intersection(set(C_li))
+
+    for taxi_it in candidate_taxi:
+        '''
+            列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
+            问题：
+                1、如何列举不同的插入情况
+                2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
+        '''
+    """
+    TODO
+    1. 完成所有的matching的剩余部分, 即从候选taxi列表中, 通过minimum detour cost, 选出最合适的taxi
+        !!!记得考虑空taxi
+    2. 检查今天写的代码是否有bug
+    """
+
+def taxi_scheduling(candidate_taxi_list):
+    pass
+
+
+def basic_routing(selected_taxi):
+    # 对匹配到的taxi进行路径规划
+    taxi_path = Path()
+    return taxi_path #一个Path对象
 
 def update(request):
     for taxi_it in taxi_list:

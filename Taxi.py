@@ -7,15 +7,18 @@ class Taxi:
     schedule_list = []
     request_list = []  # 元素是Request对象
 
-    def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left=3, mobility_vector=None, path=None):
+    def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left, mobility_vector=[], path=None):
+        self.seat_left = (3 if seat_left == None else seat_left) ###
         self.taxi_id = taxi_id
         self.cur_lon = cur_lon
         self.cur_lon = cur_lat
-        self.schedule_list = []
+        self.schedule_list = [{'request_id': -1, 'schedule_type': 'NO_ORDER', 'lon': cur_lon, 'lat': cur_lat, 'arrival_time': init_last_update_time}]
+        # schedule list中保存的是字典, 里面的内容包括: request_id: request_id, schedule_type: shedule的类型(出发或到达), lon: 经度, lat: 纬度, arrival_time: 计算出来的预期到达时间
         self.__last_update_time = init_last_update_time
         self.partition_id_belongto = partition_id_belongto
         self.mobility_vector = mobility_vector
-        self.path = path  # 元素是(timestamp, lon, lat) 依timestamp递增顺序排序
+        self.path = path  # 元素是(timestamp, lon, lat)依timestamp递增顺序排序
+        
         self.seat_left = seat_left
 
     def is_available(self):

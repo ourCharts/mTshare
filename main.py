@@ -14,11 +14,8 @@ import osmnx as ox
 import pickle
 from Tool.Tool import *
 from Path import Path
-<<<<<<< HEAD
-=======
 import os
 import glob
->>>>>>> bacc484f310877c988033a968be4a06b720f9c11
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -124,10 +121,6 @@ def request_fetcher(time_slot_start, time_slot_end):
     cursor.execute(sql)
     ret = cursor.fetchall()
     return ret
-<<<<<<< HEAD
-
-=======
->>>>>>> bacc484f310877c988033a968be4a06b720f9c11
 
 def update(request):
     for taxi_it in taxi_list:

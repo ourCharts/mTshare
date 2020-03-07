@@ -202,7 +202,7 @@ def taxi_req_matching(req):
     v_lon, v_lat = req.end_lon, req.end_lat
     nearest_start_id = ox.get_nearest_node(osm_map, (u_lat, u_lon))
     nearest_end_id = ox.get_nearest_node(osm_map, (v_lat, v_lon))
-    delta_t = req.wait_time - node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
+    delta_t = req.delivery_deadline - node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
     # 得到搜索范围的半径
     search_range = delta_t * TYPICAL_SPEED
 
@@ -249,21 +249,34 @@ def taxi_req_matching(req):
 
         C_li = C_li_filtered
     # 取交集, 计算出所有候选taxi的list
-        candidate_taxi = set(partition_intersected).intersection(set(C_li))
+    candidate_taxi = set(taxi_in_intersected).intersection(set(C_li))
+    candidate_taxi = list(candidate_taxi)
+    
+    # 将不可在时间段内到达的taxi也过滤掉
+    filtered_candidate_taxi = []
+    for candidate_taxi_it in candidate_taxi:
+        taxi_pos = (taxi_list[candidate_taxi_it].cur_lat, taxi_list[candidate_taxi_it].cur_lon)
+        taxi_nearest_node_id = ox.get_nearest_node(osm_map, taxi_pos)
+        shortest_path = node_distance_matrix[id_hash_map[nearest_start_id]][id_hash_map[taxi_nearest_node_id]]
+        travel_time = shortest_path / TYPICAL_SPEED
+        if travel_time < delta_t:
+            filtered_candidate_taxi.append(candidate_taxi_it)
+    candidate_taxi = filtered_candidate_taxi
 
-    for taxi_it in candidate_taxi:
-        pass
-        '''
-            列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
-            问题：
-                1、如何列举不同的插入情况
-                2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
-            
-            这段可以放到taxi_scheduling那里写, 因为matching只是得到候选taxi的list, 选中最合适的taxi是在scheduling里面进行的
-        '''
+    return candidate_taxi
+
+
+def validate_insertion(taxi_id):   
+    # 传入一辆taxi的id, 然后在taxi的schedule list中尝试插入. 如果存在至少一个可行的插入点, 就返回
+    # 使得detour cost最小的插入方案, 以及插入后的detour cost
+    for item in taxi_list[taxi_id].schedule_list:
+        
+
 
 def taxi_scheduling(candidate_taxi_list):
-    pass
+    for taxi_it in candidate_taxi_list:
+        
+        
 
 
 def basic_routing(selected_taxi):
@@ -287,11 +300,12 @@ def main():
         else:
             for req_item in reqs:
                 end_time = req_item['start_time'] + datetime.timedelta(minutes=15)
-                req_item = Request(req_item['order_id'], req_item['start_longitude'], req_item['start_latitude'], req_item['end_lon'], req_item['end_lat'], req_item['start_time'], end_time)
+                req_item = Request(req_item['order_id'], req_item['start_longitude'], req_item['start_latitude'], req_item['end_longitude'], req_item['end_latitude'], req_item['start_time'], req_item['end_time']) # 打车的时候难道还能给你输入到达的ddl的吗???????????
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
-                # selected_taxi = taxi_req_matching(req_item)
+                selected_taxi_list = taxi_req_matching(req_item)
+                # selected_taxi = taxi_scheduling(selected_taxi_list)
                 
 
 

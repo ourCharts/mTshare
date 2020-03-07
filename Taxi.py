@@ -4,14 +4,14 @@ from Path import Path
 
 
 class Taxi:
-    __schedule_list = []
+    schedule_list = []
     request_list = []  # 元素是Request对象
 
     def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left=3, mobility_vector=None, path=None):
         self.taxi_id = taxi_id
         self.cur_lon = cur_lon
         self.cur_lon = cur_lat
-        self.__schedule_list = []
+        self.schedule_list = []
         self.__last_update_time = init_last_update_time
         self.partition_id_belongto = partition_id_belongto
         self.mobility_vector = mobility_vector
@@ -26,12 +26,12 @@ class Taxi:
     def update_schedule(self, moment):
         pass
     '''
-		迟些要更新__schedule_list，要看看后面routing怎么写
+		迟些要更新schedule_list，要看看后面routing怎么写
 	'''
 
     def update_status(self, moment):
         # 状态： cur_lon、cur_lon、__last_update_time
-        #		 __schedule_list 、partition_id_belongto、mobility_vector
+        #		 schedule_list 、partition_id_belongto、mobility_vector
 
         self.__last_update_time = moment
         self.update_schedule(moment)

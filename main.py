@@ -16,6 +16,7 @@ from Tool.Tool import *
 from Path import Path
 import os
 import glob
+import copy
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
                        passwd='', db='taxidb', port=3308, charset='utf8')
@@ -269,116 +270,123 @@ def taxi_req_matching(req: Request):
     """
 
 
-def insertion(taxi_id, req):
-    # 传入一辆taxi的id, 然后在taxi的schedule list中尝试插入. 如果存在至少一个可行的插入点, 就返回
-    # 使得detour cost最小的插入方案, 以及插入后的detour cost
-    # 此处少考虑了一种情况, 即出发点和目的地都插入在同一"段"内的情况
-    # req_start_node_id = req.start_node_id
-    # req_end_node_id = req.end_node_id
-
-    # if len(taxi_list[taxi_id].schedule_list) == 1:
-    #     nearest_node_id = ox.get_nearest_node(
-    #         osm_map, (taxi_list[taxi_id].cur_lat, taxi_list[taxi_id].cur_lon))
-    #     detour_time = node_distance_matrix[id_hash_map[nearest_node_id]
-    #                                        ][id_hash_map[req_start_node_id]]
-    #     return True, 1, 2, detour_time
-
-    # taxi_location = (taxi_list[taxi_id].cur_lon, taxi_list[taxi_id].cur_lat)
-    # taxi_nearest_node_id = ox.get_nearest_node(osm_map, taxi_location)
+def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前面插入
+    req_start_node_id = req.start_node_id
+    req_end_node_id = req.end_node_id
     
-    # start_insertion_pos = 0
-    # start_insertion_detour_cost = int(1e10)
-    # end_insertion_pos = 0
-    # end_insertion_detour_cost = int(1e10)
+    pre_node_lon = (taxi_list[taxi_id].schedule_list[pos_i - 1])['lon']
+    pre_node_lat = (taxi_list[taxi_id].schedule_list[pos_i - 1])['lat']
+    pre_node_id = ox.get_nearest_node(osm_map, (pre_node_lat, pre_node_lon))
 
-    # timecur = time.time()
-    # # 先尝试插入出发点
-    # for idx in range(len(taxi_list[taxi_id].schedule_list) - 1):
-    #     pre_lon = taxi_list[taxi_id].schedule_list[idx]['lon']
-    #     pre_lat = taxi_list[taxi_id].schedule_list[idx]['lat'] 
-    #     pre_nearest = ox.get_nearest_node(osm_map, (pre_lat, pre_lon)) # 需要优化, 尽可能减少get_nearest_node的调用
-    #     aft_lon = taxi_list[taxi_id].schedule_list[idx + 1]['lon']
-    #     aft_lat = taxi_list[taxi_id].schedule_list[idx + 1]['lat']
-    #     aft_nearest = ox.get_nearest_node(osm_map, (aft_lat, aft_lon)) # 需要优化, 尽可能减少get_nearest_node的调用
-        
-    #     time_cost1 = node_distance_matrix[id_hash_map[pre_nearest]][req.start_node_id]
-    #     time_cost2 = node_distance_matrix[req.start_node_id][id_hash_map[aft_nearest]]
-        
-    #     deadline = 0
-    #     if taxi_list[taxi_id].schedule_list[idx]['schedult_type'] == 'DEPART':
-    #         deadline = request_list[taxi_list[taxi_id].schedule_list[idx]['request_id']].pickup_deadline
-    #     else:
-    #         deadline = request_list[taxi_list[taxi_id].schedule_list[idx]['request_id']].delivery_deadline
-    #     if timecur + time_cost1 + time_cost2 > deadline:
-    #         continue
-    #     else:
-    #         cost = time_cost1 + time_cost2
-    #         if cost < start_insertion_detour_cost:
-    #             start_insertion_detour_cost = cost
-    #             start_insertion_pos = idx # 在第id个schedule后面插入
+    aft_node_lon = (taxi_list[taxi_id].schedule_list[pos_i])['lon']
+    aft_node_lat = (taxi_list[taxi_id].schedule_list[pos_j])['lat']
+    aft_node_id = ox.get_nearest_node(osm_map, (aft_node_lat, aft_node_lon))
 
-    #     # 插入目的地
-    #     for idx in range(start_insertion_pos + 1, len(taxi_list[taxi_id].schedule_list) - 1):
-    #         pre_lon = taxi_list[taxi_id].schedule_list[idx]['lon']
-    #         pre_lat = taxi_list[taxi_id].schedule_list[idx]['lat'] 
-    #         pre_nearest = ox.get_nearest_node(osm_map, (pre_lat, pre_lon)) # 需要优化, 尽可能减少get_nearest_node的调用
-    #         aft_lon = taxi_list[taxi_id].schedule_list[idx + 1]['lon']
-    #         aft_lat = taxi_list[taxi_id].schedule_list[idx + 1]['lat']
-    #         aft_nearest = ox.get_nearest_node(osm_map, (aft_lat, aft_lon)) # 需要优化, 尽可能减少get_nearest_node的调用
-            
-    #         time_cost1 = node_distance_matrix[id_hash_map[pre_nearest]][req.start_node_id]
-    #         time_cost2 = node_distance_matrix[req.start_node_id][id_hash_map[aft_nearest]]
-            
-    #         deadline = 0
-    #         if taxi_list[taxi_id].schedule_list[idx]['schedult_type'] == 'DEPART':
-    #             deadline = request_list[taxi_list[taxi_id].schedule_list[idx]['request_id']].pickup_deadline
-    #         else:
-    #             deadline = request_list[taxi_list[taxi_id].schedule_list[idx]['request_id']].delivery_deadline
-    #         if  + time_cost1 + time_cost2 > deadline:
-    #             continue
-    #         else:
-    #             cost = time_cost1 + time_cost2
-    #             if cost < end_insertion_detour_cost:
-    #                 end_insertion_detour_cost = cost
-    #                 end_insertion_pos = idx # 在第id个schedule后面插入
-
-    #     return True, start_insertion_pos, end_insertion_pos, start_insertion_detour_cost + end_insertion_detour_cost
-
-
-def taxi_scheduling(candidate_taxi_list, req): 
-    # 得到候选taxi的list
-    selected_taxi = -1
-    mini_cost = int(1e10)
-    st_pos = 0
-    ed_pos = 0
-    for taxi_it in enumerate(candidate_taxi_list):
-        flag, pos1, pos2, cost_tmp = insertion(taxi_it, req)
-        if not flag:
-            continue
-        else:
-            if mini_cost > cost_tmp:
-                mini_cost = cost_tmp
-                selected_taxi = taxi_list[taxi_it].taxi_id
-                st_pos = pos1
-                ed_pos = pos2
+    ddl = 0
+    dis = node_distance_matrix[id_hash_map[pre_node_id]][id_hash_map[req_start_node_id]] + node_distance_matrix[id_hash_map[req_start_node_id]][id_hash_map[aft_node_id]]
+    req_id = (taxi_list[taxi_id].schedule_list[pos_i])['request_id']
+    if (taxi_list[taxi_id].schedule_list[pos_i])['schedule_type'] == 'ARRIVAL':
+        ddl = request_list[req_id].delivery_deadline
+    elif (taxi_list[taxi_id].schedule_list[pos_i])['schedule_type'] == 'DEPART':
+        ddl = request_list[req_id].pickup_deadline
     
-    if selected_taxi != -1:
-        taxi_list[selected_taxi].schedule_list.insert(st_pos + 1)
-        taxi_list[selected_taxi].schedule_list.insert(ed_pos + 1)
-        return selected_taxi
+    if (taxi_list[taxi_id].schedule_list[pos_i - 1])['arrival_time'] + node_distance_matrix[id_hash_map[pre_node_id]][id_hash_map[req_start_node_id]] / TYPICAL_SPEED > ddl:
+        return False
+    
+    for i in range(pos_i, len(taxi_list[taxi_id].schedule_list)):
+        req_id = (taxi_list[taxi_id].schedule_list[i])['request_id']
+        ddl_ = 0
+        if (taxi_list[taxi_id].schedule_list[i])['schedule_type'] == 'ARRIVAL':
+            ddl_ = request_list[req_id].delivery_deadline
+        elif (taxi_list[taxi_id].schedule_list[i])['schedule_type'] == 'DEPART':
+            ddl_ = request_list[req_id].pickup_deadline
 
+        tmp = (taxi_list[taxi_id].schedule_list[i])['arrival_time'] + dis / TYPICAL_SPEED
+        if tmp > ddl_:
+            return False
+        (taxi_list[taxi_id].schedule_list[i])['arrival'] += tmp
 
-def select_the_best_taxi(todo_taxi_list, req):
-    for taxi_item in todo_taxi_list:
-        flag, pos1, pos2, detour_cost = insertion(taxi_item, req)
+    pre_node_lon = (taxi_list[taxi_id].schedule_list[pos_j - 1])['lon']
+    pre_node_lat = (taxi_list[taxi_id].schedule_list[pos_j - 1])['lat']
+    pre_node_id = ox.get_nearest_node(osm_map, (pre_node_lat, pre_node_lon))
+
+    aft_node_lon = (taxi_list[taxi_id].schedule_list[pos_j])['lon']
+    aft_node_lat = (taxi_list[taxi_id].schedule_list[pos_j])['lat']
+    aft_node_id = ox.get_nearest_node(osm_map, (aft_node_lat, aft_node_lon))
+
+    ddl = 0
+    dis = node_distance_matrix[id_hash_map[pre_node_id]][id_hash_map[req_end_node_id]] + node_distance_matrix[id_hash_map[req_end_node_id]][id_hash_map[aft_node_id]]
+    req_id = (taxi_list[taxi_id].schedule_list[pos_j])['request_id']
+    if (taxi_list[taxi_id].schedule_list[pos_j])['schedule_type'] == 'ARRIVAL':
+        ddl = request_list[req_id].delivery_deadline
+    elif (taxi_list[taxi_id].schedule_list[pos_j])['schedule_type'] == 'DEPART':
+        ddl = request_list[req_id].pickup_deadline
+
+    if (taxi_list[taxi_id].schedule_list[pos_j - 1])['arrival_time'] + node_distance_matrix[id_hash_map[pre_node_id]][id_hash_map[req_end_node_id]] / TYPICAL_SPEED > ddl:
+        return False
+
+    for i in range(pos_j, len(taxi_list[taxi_id].schedule_list)):
+        req_id = (taxi_list[taxi_id].schedule_list[i])['request_id']
+        ddl_ = 0
+        if (taxi_list[taxi_id].schedule_list[i])['schedule_type'] == 'ARRIVAL':
+            ddl_ = request_list[req_id].delivery_deadline
+        elif (taxi_list[taxi_id].schedule_list[i])['schedule_type'] == 'DEPART':
+            ddl_ = request_list[req_id].pickup_deadline
+
+        tmp = (taxi_list[taxi_id].schedule_list[i])['arrival'] + dis / TYPICAL_SPEED
+        if tmp > ddl_:
+            return False
+        (taxi_list[taxi_id].schedule_list[i])['arrival'] += tmp
         
+    return True
 
-def basic_routing(selected_taxi):
+
+
+def basic_routing(Slist):
     # 对匹配到的taxi进行路径规划
     taxi_path = Path()
     return taxi_path  # 一个Path对象
 
+def possibility_routing(Slist):
+    return 1
 
+
+def taxi_scheduling(candidata_taxi_list, req, mode=1):
+    possible_insertion = []
+    minimum_cost = 10 ** 10
+    selected_taxi = -1
+    for taxi_it in candidata_taxi_list:
+        possible_insertion.clear
+        bnd = len(taxi_list[taxi_it].schedule_list)
+        for i in range(1, bnd):
+            for j in range(i + 1, bnd):
+                flag = insertion_feasibility_check(taxi_it, req, i, j)
+                if flag:
+                    possible_insertion.append((i, j))
+        
+        ori_cost = taxi_list[taxi_it].cur_total_cost
+        res = []
+        for insertion in possible_insertion:
+            Slist = copy.deepcopy(taxi_list[taxi_it].schedule_list)
+            start_point = {'request_id': req.request_id, 'schedule_type': 'DEPART', 'lon': req.start_lon, 'lat': req.start_lat, 'arrival_time': None} # arrival_time在之后routing的时候确定
+            end_point = {'request_id': req.request_id, 'schedule_type': 'ARRIVAL', 'lon': req.end_lon, 'lat': req.end_lat, 'arrival_time': None}
+            Slist.insert(insertion[0], start_point)
+            Slist.index(insertion[1], end_point)
+            
+            if mode:
+                cost = basic_routing(Slist) # 写完basic routing就ok了
+            else:
+                cost = possibility_routing(Slist)
+            if cost - ori_cost < minimum_cost:
+                res = Slist    
+                minimum_cost = cost - ori_cost
+                selected_taxi = taxi_it
+
+    taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
+    del res
+    return selected_taxi, minimum_cost
+
+    
 def main():
     req_cnt = 0
     system_init()
@@ -415,10 +423,7 @@ def main():
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
                 selected_taxi_list = taxi_req_matching(req_item)
-                best_taxi = select_the_best_taxi(selected_taxi_list, req_item)
-
-                # selected_taxi = taxi_scheduling(selected_taxi_list)
-
+                sel_taxi, min_cost = taxi_scheduling(selected_taxi_list, req_item, 1)
 
 main()
 

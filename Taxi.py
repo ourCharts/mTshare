@@ -6,6 +6,7 @@ from Path import Path
 class Taxi:
     schedule_list = []
     request_list = []  # 元素是Request对象
+    cur_total_cost = 0
 
     def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left, mobility_vector=[], path=None):
         self.seat_left = (3 if seat_left == None else seat_left) ###
@@ -18,8 +19,9 @@ class Taxi:
         self.partition_id_belongto = partition_id_belongto
         self.mobility_vector = mobility_vector
         self.path = path  # 元素是(timestamp, lon, lat)依timestamp递增顺序排序
-        
+        self.cur_total_cost = 0
         self.seat_left = seat_left
+        
 
     def is_available(self):
         if self.seat_left > 0:

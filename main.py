@@ -234,7 +234,7 @@ def taxi_req_matching(req: Request):
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
 
     if len(taxi_in_intersected) == 0:  # 在规定时间内没有taxi能来，所以放弃订单
-        return '''放弃订单了'''
+        return None '''放弃订单了'''
     vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
     max_cos = -2
     max_idx = -1
@@ -254,21 +254,13 @@ def taxi_req_matching(req: Request):
                 C_li.append(it.ID)
     # 取交集, 计算出所有候选taxi的list
         candidate_taxi = set(partition_intersected).intersection(set(C_li))
-
-
-        selected_taxi, minimum_cost = taxi_scheduling(candidate_taxi, req)
+        return candidate_taxi
         '''
             列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
             问题：
                 1、如何列举不同的插入情况
                 2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
         '''
-    """
-    TODO
-    1. 完成所有的matching的剩余部分, 即从候选taxi列表中, 通过minimum detour cost, 选出最合适的taxi
-        !!!记得考虑空taxi
-    2. 检查今天写的代码是否有bug
-    """
 
 
 def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前面插入
@@ -427,8 +419,9 @@ def main():
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
-                selected_taxi_list = taxi_req_matching(req_item)
-                sel_taxi, min_cost = taxi_scheduling(selected_taxi_list, req_item, 1)
+                candidate_taxi_list = taxi_req_matching(req_item)
+                if candidate_taxi_list: #如果没有候选taxi会返回none
+                    sel_taxi, min_cost = taxi_scheduling(candidate_taxi_list, req_item, 1)
 
 main()
 

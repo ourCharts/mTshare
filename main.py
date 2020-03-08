@@ -255,7 +255,8 @@ def taxi_req_matching(req: Request):
     # 取交集, 计算出所有候选taxi的list
         candidate_taxi = set(partition_intersected).intersection(set(C_li))
 
-    for taxi_it in candidate_taxi:
+
+        selected_taxi, minimum_cost = taxi_scheduling(candidate_taxi, req)
         '''
             列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
             问题：
@@ -356,9 +357,12 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
     minimum_cost = 10 ** 10
     selected_taxi = -1
     for taxi_it in candidata_taxi_list:
-        possible_insertion.clear
+        possible_insertion.clear()
         bnd = len(taxi_list[taxi_it].schedule_list)
-        for i in range(1, bnd):
+        for i in range(1, bnd): 
+            '''
+                如果 bnd == 1的话这里是不会进行的喔
+            '''
             for j in range(i + 1, bnd):
                 flag = insertion_feasibility_check(taxi_it, req, i, j)
                 if flag:
@@ -381,7 +385,8 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
                 res = Slist    
                 minimum_cost = cost - ori_cost
                 selected_taxi = taxi_it
-
+                
+    taxi_list[selected_taxi].request_list.append(req)
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
     del res
     return selected_taxi, minimum_cost

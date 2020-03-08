@@ -4,7 +4,6 @@ from Path import Path
 
 
 class Taxi:
-    schedule_list = []
     request_list = []  # 元素是Request对象
     cur_total_cost = 0
 

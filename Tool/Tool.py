@@ -9,6 +9,7 @@ map_file.close()
 tool_node_list = []
 df = pd.read_csv('./data/node_list_with_cluster.csv')
 tli = df.loc[:, 'real_id']
+cluster_li = df.loc[:, 'cluster_id']
 tmpp = [i for i in range(len(tli))]
 tool_node_list = zip(tli, tmpp)
 id_hash_map = dict(tool_node_list)
@@ -31,7 +32,9 @@ def get_distance(lon1, lat1, lon2, lat2):
     ret = round(ret * 10000) / 10000
     return ret * 1000
 
+
 def check_in_which_partition(lon, lat):
     ret = ox.get_nearest_node(osm_map, (lat, lon))
     ret = id_hash_map[ret]
+    ret = cluster_li[ret]
     return ret

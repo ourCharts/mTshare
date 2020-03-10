@@ -52,6 +52,7 @@ for idx in range(1, len(files)):
 
 # 该文件存放的是地图上所有节点点对之间的最短路, 晚点放入
 node_shortest_path = pd.read_csv('./data/node_shortest_path.csv')
+# 名字为 shortest_path_matrix
 node_distance_matrix = []
 
 
@@ -257,8 +258,8 @@ def taxi_req_matching(req: Request):
             if it.vector_type == 'TAXI':
                 C_li.append(it.ID)
     # 取交集, 计算出所有候选taxi的list
-        candidate_taxi = set(partition_intersected).intersection(set(C_li))
-        return candidate_taxi
+    candidate_taxi = set(partition_intersected).intersection(set(C_li))
+    return candidate_taxi
         '''
             列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
             问题：
@@ -338,7 +339,7 @@ def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前�
     return True
 
 def partition_filter(node1,node2): #返回一个数组，组成元素是partition id
-    Lambda = 0.9998
+    # 根据论文P7
     partition1 = check_in_which_partition(node1['lon'],node1['lat'])
     partition2 = check_in_which_partition(node2['lon'],node2['lat'])
 
@@ -352,7 +353,7 @@ def partition_filter(node1,node2): #返回一个数组，组成元素是partitio
     forever_mobility_vector = MobilityVector(landmark1[0],landmark1[1],landmark2[0],landmark2[1], 'REQ', -1) 
 
     filtered_partition = []
-    for idx, one_part in enumerate(partition_list):
+    for idx, one_partition in enumerate(partition_list):
         tmp_lm = landmark_list[idx]
         tmp_vec = MobilityVector(landmark1[0],landmark1[1],tmp_lm[0],tmp_lm[1], 'REQ', -1)
         if cosine_similarity(tmp_vec, forever_mobility_vector) < Lambda: #Travel direction rule 来自论文P7左栏
@@ -361,15 +362,44 @@ def partition_filter(node1,node2): #返回一个数组，组成元素是partitio
         tmp_node = ox.get_nearest_node(osm_map, (tmp_lm[0],tmp_lm[1]))
         cost_1totmp = node_distance_matrix[node1][tmp_node] / TYPICAL_SPEED 
         cost_tmpto2 = node_distance_matrix[tmp_node][node2] / TYPICAL_SPEED
-        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2:
-            filtered_partition.append(one_part)
+        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2
+            filtered_partition.append((one_partition,cost_1totmp))
+    
+    filtered_partition.sort(key = lambda x: x[1])
+    #使filtered_partition里的元组根据cost_1totmp递增的顺序排列
+
+    filtered_partition = [i[0] for i in filtered_partition]
+    '''
+        注意第一个partition是不是taxi所在的地方
+        最后一个partition是不是终点的地方
+        感觉要将第一个和最后一个地方换成确切的lon lat而不是partition
+    
+    '''
     return filtered_partition
 
 
 
 def basic_routing(Slist):
-    # 对匹配到的taxi进行路径规划
+    # 根据论文P7
     taxi_path = Path()
+
+    for idx,s_node in  enumerate(Slist):
+        if idx == len(Slist)-1: break
+
+        filtered_partition = partition_filter(Slist[idx],Slist[idx-1])
+
+        for index,p_node in  enumerate(filtered_partition):
+            if index == len(filtered_partition)-1:break
+
+            node1 = partition_list.index(filtered_partition[index])#得到partition id在partition_list中的下表
+            node1_landmark = landmark_list[node1]
+            node2 = partition_list.index(filtered_partition[index+1])#得到partition id在partition_list中的下表
+            node2_landmark = landmark_list[node2]
+
+            length = len(taxi_path.path_node_list)
+            taxi_path.path_node_list[length:] = shortest_path_matrix[node1_landmark][node2_landmark]
+            # 获得两个partition的landmark的最短路径
+
     return taxi_path  # 一个Path对象
 
 def possibility_routing(Slist):

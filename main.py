@@ -141,8 +141,9 @@ def update(request):
     general_mobility_vector.clear()
     Lambda = 0.998
     for request_it in request_list:
-        vec1 = MobilityVector(request_it.start_lon, request_it.start_lat, request_it.end_lon,
-             request_it.end_lat, 'REQ', request_it.request_id)
+        vec1 = [request_it.start_lon, request_it.start_lat, request_it.end_lon, request_it.end_lat]
+        # vec1 = MobilityVector(request_it.start_lon, request_it.start_lat, request_it.end_lon,
+        #      request_it.end_lat, 'REQ', request_it.request_id)
         max_cos = -2
         max_idx = -1
         flag = False
@@ -237,7 +238,7 @@ def taxi_req_matching(req: Request):
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
 
     if len(taxi_in_intersected) == 0:  # 在规定时间内没有taxi能来，所以放弃订单
-        return None '''放弃订单了'''
+        return None                    # 放弃订单了
     vec = MobilityVector(req.start_lon, req.start_lat, req.end_lon, req.end_lat, 'REQ', req.request_id)
     max_cos = -2
     max_idx = -1
@@ -337,6 +338,7 @@ def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前�
     return True
 
 def partition_filter(node1,node2): #返回一个数组，组成元素是partition id
+    Lambda = 0.9998
     partition1 = check_in_which_partition(node1['lon'],node1['lat'])
     partition2 = check_in_which_partition(node2['lon'],node2['lat'])
 
@@ -347,19 +349,19 @@ def partition_filter(node1,node2): #返回一个数组，组成元素是partitio
     node2 = ox.get_nearest_node(osm_map, (landmark2[0],landmark2[1]))
 
     cost_1to2 = node_distance_matrix[node1][node2] / TYPICAL_SPEED # lm1到lm2的travel cost
-    forever_mobility_vector = MobilityVector(landmark1[0],landmark1[1],landmark2[0],landmark2[1],, 'REQ',-1) 
+    forever_mobility_vector = MobilityVector(landmark1[0],landmark1[1],landmark2[0],landmark2[1], 'REQ', -1) 
 
     filtered_partition = []
     for idx, one_part in enumerate(partition_list):
         tmp_lm = landmark_list[idx]
-        tmp_vec = MobilityVector(landmark1[0],landmark1[1],tmp_lm[0],tmp_lm[1], 'REQ',-1)
+        tmp_vec = MobilityVector(landmark1[0],landmark1[1],tmp_lm[0],tmp_lm[1], 'REQ', -1)
         if cosine_similarity(tmp_vec, forever_mobility_vector) < Lambda: #Travel direction rule 来自论文P7左栏
             continue
         # Travel cost rule
         tmp_node = ox.get_nearest_node(osm_map, (tmp_lm[0],tmp_lm[1]))
         cost_1totmp = node_distance_matrix[node1][tmp_node] / TYPICAL_SPEED 
         cost_tmpto2 = node_distance_matrix[tmp_node][node2] / TYPICAL_SPEED
-        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2
+        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2:
             filtered_partition.append(one_part)
     return filtered_partition
 

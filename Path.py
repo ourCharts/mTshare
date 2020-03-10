@@ -1,5 +1,5 @@
 class Path:
-    # 元素是(timestamp, lon, lat) 依timestamp递增顺序排序    def __init__(self):
+    # 元素是(lon, lat) 依timestamp递增顺序排序    def __init__(self):
     path_node_list = []
 
     def get_position(self, moment):

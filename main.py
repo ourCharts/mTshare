@@ -383,14 +383,18 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
     for taxi_it in candidata_taxi_list:
         possible_insertion.clear()
         bnd = len(taxi_list[taxi_it].schedule_list)
-        for i in range(1, bnd): 
-            '''
-                如果 bnd == 1的话这里是不会进行的喔
-            '''
-            for j in range(i + 1, bnd):
-                flag = insertion_feasibility_check(taxi_it, req, i, j)
-                if flag:
-                    possible_insertion.append((i, j))
+        if bnd == 1:
+            possible_insertion.append((1, 2))
+        else:
+            for i in range(1, bnd): 
+                '''
+                    如果 bnd == 1的话这里是不会进行的喔
+                    已修复
+                '''
+                for j in range(i + 1, bnd):
+                    flag = insertion_feasibility_check(taxi_it, req, i, j)
+                    if flag:
+                        possible_insertion.append((i, j))
         
         ori_cost = taxi_list[taxi_it].cur_total_cost
         res = []

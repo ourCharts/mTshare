@@ -260,12 +260,12 @@ def taxi_req_matching(req: Request):
     # 取交集, 计算出所有候选taxi的list
     candidate_taxi = set(partition_intersected).intersection(set(C_li))
     return candidate_taxi
-        '''
-            列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
-            问题：
-                1、如何列举不同的插入情况
-                2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
-        '''
+    '''
+        列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
+        问题：
+            1、如何列举不同的插入情况
+            2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
+    '''
 
 
 def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前面插入
@@ -362,7 +362,7 @@ def partition_filter(node1,node2): #返回一个数组，组成元素是partitio
         tmp_node = ox.get_nearest_node(osm_map, (tmp_lm[0],tmp_lm[1]))
         cost_1totmp = node_distance_matrix[node1][tmp_node] / TYPICAL_SPEED 
         cost_tmpto2 = node_distance_matrix[tmp_node][node2] / TYPICAL_SPEED
-        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2
+        if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2:
             filtered_partition.append((one_partition,cost_1totmp))
     
     filtered_partition.sort(key = lambda x: x[1])
@@ -384,7 +384,7 @@ def basic_routing(Slist):
     taxi_path = Path()
 
     for idx,s_node in  enumerate(Slist):
-        if idx == len(Slist)-1: break
+        if idx == len(Slist) - 1: break
 
         filtered_partition = partition_filter(Slist[idx],Slist[idx-1])
 
@@ -397,7 +397,7 @@ def basic_routing(Slist):
             node2_landmark = landmark_list[node2]
 
             length = len(taxi_path.path_node_list)
-            taxi_path.path_node_list[length:] = shortest_path_matrix[node1_landmark][node2_landmark]
+            taxi_path.path_node_list[length] = shortest_path_matrix[node1_landmark][node2_landmark]
             # 获得两个partition的landmark的最短路径
 
     return taxi_path  # 一个Path对象

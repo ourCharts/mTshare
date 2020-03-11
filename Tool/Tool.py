@@ -2,9 +2,10 @@ import math
 import osmnx as ox
 import pandas as pd
 import pickle
-
+import networkx as nx
 map_file = open('./data/map.pickle', 'rb')
 osm_map = pickle.load(map_file) # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
+
 map_file.close()
 tool_node_list = []
 df = pd.read_csv('./data/node_list_with_cluster.csv')

@@ -260,12 +260,6 @@ def taxi_req_matching(req: Request):
     # 取交集, 计算出所有候选taxi的list
     candidate_taxi = set(partition_intersected).intersection(set(C_li))
     return candidate_taxi
-        '''
-            列举不同的插入状况，从而有不同的路径，计算detour cost。选出最佳插入状况 并 记住对应的detour cost和path
-            问题：
-                1、如何列举不同的插入情况
-                2、什么叫拼车？ {O1 D1 O2 D2}还叫拼车吗？（O1是订单1的起点，D1是终点）
-        '''
 
 
 def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前面插入

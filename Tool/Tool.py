@@ -39,3 +39,9 @@ def check_in_which_partition(lon, lat):
     ret = id_hash_map[ret]
     ret = cluster_li[ret]
     return ret
+
+def get_shortest_path_node(node1,node2):
+    return nx.shortest_path(osm_map,source=node1,target=node2)
+
+def get_shortest_path_length(node1,node2):
+    return nx.shortest_path_length(osm_map,source=node1,target=node2)

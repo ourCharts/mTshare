@@ -7,3 +7,8 @@
 * Partition.py：包含Partition类，每个Partition对象表示一个地图划分
 * Request.py：包含Request类，每个Request对象表示一个订单
 * Taxi.py：包含Taxi类，每个Taxi对象表示一辆出租车
+
+## OSmnx依赖下载地址：
+https://www.lfd.uci.edu/~gohlke/pythonlibs/#rtree
+在里面下载：
+Fiona, Rtree, GDAL

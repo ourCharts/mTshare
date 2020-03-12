@@ -7,7 +7,7 @@ class Taxi:
     cur_total_cost = 0
 
     def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left, mobility_vector=[], path=None):
-        self.seat_left = (3 if seat_left == None else seat_left) ###
+        self.seat_left = (3 if seat_left == None else seat_left)
         self.taxi_id = taxi_id
         self.cur_lon = cur_lon
         self.cur_lon = cur_lat
@@ -35,7 +35,7 @@ class Taxi:
     def update_status(self, moment):
         # 状态： cur_lon、cur_lon、__last_update_time
         #		 schedule_list 、partition_id_belongto、mobility_vector
-
+        
         self.__last_update_time = moment
         self.update_schedule(moment)
         # 更新经纬度

@@ -33,6 +33,7 @@ TIME_OFFSET = 0
 SYSTEM_INIT_TIME = 0
 partition_filter_param = 1.0
 
+Lambda = 0.998
 alpha = 0.999999921837146
 node_list = []
 taxi_list = []  # 里面包含有所有的taxi
@@ -140,7 +141,6 @@ def update(request):
         taxi_it.update_status(request['start_time'])
     mobility_cluster.clear()
     general_mobility_vector.clear()
-    Lambda = 0.998
     for request_it in request_list:
         vec1 = [request_it.start_lon, request_it.start_lat, request_it.end_lon, request_it.end_lat]
         # vec1 = MobilityVector(request_it.start_lon, request_it.start_lat, request_it.end_lon,
@@ -376,7 +376,7 @@ def partition_filter(node1,node2): #返回一个数组，组成元素是partitio
 def basic_routing(Slist):
     # 根据论文P7
     taxi_path = Path()
-
+    path_distance = 0
     for idx,s_node in  enumerate(Slist):
         if idx == len(Slist) - 1: break
 
@@ -391,10 +391,12 @@ def basic_routing(Slist):
             node2_landmark = landmark_list[node2]
 
             length = len(taxi_path.path_node_list)
-            taxi_path.path_node_list[length] = shortest_path_matrix[node1_landmark][node2_landmark]
+            taxi_path.path_node_list[length] = get_shortest_path_node(node1_landmark,node2_landmark)
+            path_distance += get_shortest_path_length(node1_landmark,node2_landmark)
             # 获得两个partition的landmark的最短路径
+    path_cost = path_distance/TYPICAL_SPEED
+    return (taxi_path,path_cost)  # 一个Path对象和Path的cost
 
-    return taxi_path  # 一个Path对象
 
 def possibility_routing(Slist):
     return 1
@@ -411,10 +413,6 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
             possible_insertion.append((1, 2))
         else:
             for i in range(1, bnd): 
-                '''
-                    如果 bnd == 1的话这里是不会进行的喔
-                    已修复
-                '''
                 for j in range(i + 1, bnd):
                     flag = insertion_feasibility_check(taxi_it, req, i, j)
                     if flag:
@@ -430,18 +428,20 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
             Slist.index(insertion[1], end_point)
             
             if mode:
-                cost = basic_routing(Slist) # 写完basic routing就ok了
+                (new_path,cost) = basic_routing(Slist) # 写完basic routing就ok了
             else:
-                cost = possibility_routing(Slist)
+                (new_path,cost) = possibility_routing(Slist)
             if cost - ori_cost < minimum_cost:
                 res = Slist    
                 minimum_cost = cost - ori_cost
                 selected_taxi = taxi_it
+                selected_taxi_path = new_path
                 
     taxi_list[selected_taxi].request_list.append(req)
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
+    taxi_list[selected_taxi].path.path_node_list = selected_taxi_path
     del res
-    return selected_taxi, minimum_cost
+    # return selected_taxi, minimum_cost
 
     
 def main():
@@ -480,8 +480,10 @@ def main():
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
                 candidate_taxi_list = taxi_req_matching(req_item)
-                if candidate_taxi_list: #如果没有候选taxi会返回none
-                    sel_taxi, min_cost = taxi_scheduling(candidate_taxi_list, req_item, 1)
+                # if candidate_taxi_list: #如果没有候选taxi会返回none
+                #     sel_taxi, min_cost = 
+                if candidate_taxi_list:
+                    taxi_scheduling(candidate_taxi_list, req_item, 1)
 
 main()
 

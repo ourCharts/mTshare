@@ -5,7 +5,7 @@ from Path import Path
 
 class Taxi:
     cur_total_cost = 0
-
+    
     def __init__(self, taxi_id, cur_lon, cur_lat, init_last_update_time, partition_id_belongto, seat_left, mobility_vector=[], path=None):
         self.seat_left = (3 if seat_left == None else seat_left)
         self.taxi_id = taxi_id
@@ -46,17 +46,19 @@ class Taxi:
             self.cur_lon, self.cur_lat)
         if self.path.is_over() < 0:
             self.path = None
-            self.request_list.clear()
+            self.schedule_list = [{'request_id': -1, 'schedule_type': 'NO_ORDER', 'lon': self.cur_lon, 'lat': self.cur_lat, 'arrival_time': self.__last_update_time}]
             self.mobility_vector = None
             return
 
         # mobility-vector的更新
         average_lon = average_lat = 0
-        for req in self.request_list:
-            average_lat += req.end_lat
-            average_lon += req.end_lon
-        tmp_len = len(self.request_list)
-        average_lat /= tmp_len
-        average_lon /= tmp_len
+        sum_item = 0
+        for sch_node in self.schedule_list:
+            if sch_node['schedule_type']!='ARRIVAL':continue
+            average_lat += sch_node['lon']
+            average_lon += sch_node['lat']
+            sum_item += 1
+        average_lat /= sum_item
+        average_lon /= sum_item
         self.mobility_vector = MobilityVector(
             self.cur_lon, self.cur_lat, average_lon, average_lat, "TAXI", self.taxi_id)

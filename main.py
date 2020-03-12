@@ -334,6 +334,7 @@ def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j): # 在前�
 
 def partition_filter(node1,node2): #返回一个数组，组成元素是partition id
     # 根据论文P7
+    Lambda = 0.95
     partition1 = check_in_which_partition(node1['lon'],node1['lat'])
     partition2 = check_in_which_partition(node2['lon'],node2['lat'])
 
@@ -377,7 +378,7 @@ def basic_routing(Slist):
     # 根据论文P7
     taxi_path = Path()
 
-    for idx,s_node in  enumerate(Slist):
+    for idx, s_node in  enumerate(Slist):
         if idx == len(Slist) - 1: break
 
         filtered_partition = partition_filter(Slist[idx],Slist[idx-1])

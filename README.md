@@ -1,5 +1,7 @@
 ## mTshare
+建议首次搭建环境时, 首先运行pip install -r requirement.txt
 
+数据描述:
 * data：存放运行时需要用到的数据
 
 * log：存放日志文件

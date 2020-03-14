@@ -1,2 +1,0 @@
-2020/3/10 17:48 kingsley
-因为schedule_list内元素更换的原因，Taxi.py的update需要重新写

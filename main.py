@@ -386,11 +386,11 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
 def basic_routing(Slist, taxi_it):
     # 根据论文P7
     taxi_path = Path()
-
+    sum_path_distance = 0 
     for idx, s_node in enumerate(Slist):
         if idx == len(Slist) - 1:
             break
-
+        path_distance = 0
         filtered_partition = partition_filter(Slist[idx], Slist[idx-1])
 
         for index, p_node in enumerate(filtered_partition):
@@ -411,8 +411,11 @@ def basic_routing(Slist, taxi_it):
             
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat, node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
             taxi_path.path_node_list[length] = tmp_list
-            path_distance += get_shortest_path_length(
-                node1_landmark, node2_landmark)
+            path_distance += get_shortest_path_length(node1_landmark, node2_landmark)
+        
+        Slist[idx]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
+
+        sum_path_distance += path_distance
             # 获得两个partition的landmark的最短路径
 
     taxi_pos_node = ox.get_nearest_node(
@@ -422,11 +425,11 @@ def basic_routing(Slist, taxi_it):
     taxi_path.path_node_list.insert(0, taxi_to_first_slist_node_path)
     # 加上了taxi目前位置到slist第一个节点的路径
 
-    path_distance += get_shortest_path_length(
+    sum_path_distance += get_shortest_path_length(
         taxi_pos_node, taxi_path.path_node_list[0])
     # 加上了taxi目前位置到slist第一个节点的路径长度
 
-    path_cost = path_distance / TYPICAL_SPEED
+    path_cost = sum_path_distance / TYPICAL_SPEED
     return (taxi_path, path_cost)  # 一个Path对象和Path的cost
 
 
@@ -454,6 +457,10 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
         res = []
         for insertion in possible_insertion:
             Slist = copy.deepcopy(taxi_list[taxi_it].schedule_list)
+
+            # 传引用的意思吗
+
+
             start_point = {'request_id': req.request_id, 'schedule_type': 'DEPART', 'lon': req.start_lon,
                            'lat': req.start_lat, 'arrival_time': None}  # arrival_time在之后routing的时候确定
             end_point = {'request_id': req.request_id, 'schedule_type': 'ARRIVAL',
@@ -477,6 +484,24 @@ def taxi_scheduling(candidata_taxi_list, req, mode=1):
     taxi_list[selected_taxi].path.path_node_list = selected_taxi_path
     del res
     # return selected_taxi, minimum_cost
+
+
+
+
+
+now_time = 0
+#now_time被刘键聪设为全局变量
+
+
+
+
+
+
+
+
+
+
+
 
 
 def main():

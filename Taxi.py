@@ -27,10 +27,10 @@ class Taxi:
         return False
 
     def update_schedule(self, moment):
-        pass
-    '''
-		迟些要更新schedule_list，要看看后面routing怎么写
-	'''
+        for idx,schedule_node in enumerate(self.schedule_list):
+            if schedule_node['arrival_time'] < moment:
+                del self.schedule_list[idx]
+
 
     def update_status(self, moment):
         # 状态： cur_lon、cur_lon、__last_update_time

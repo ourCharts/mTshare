@@ -4,7 +4,7 @@ import pandas as pd
 import pickle
 import networkx as nx
 map_file = open('./data/map.pickle', 'rb')
-osm_map = pickle.load(map_file) # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
+osm_map = pickle.load(map_file)  # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
 
 map_file.close()
 tool_node_list = []
@@ -15,8 +15,9 @@ tmpp = [i for i in range(len(tli))]
 tool_node_list = zip(tli, tmpp)
 id_hash_map = dict(tool_node_list)
 
+
 def rad(deg):
-    return (deg / 180.0) * math.pi 
+    return (deg / 180.0) * math.pi
 
 
 def get_distance(lon1, lat1, lon2, lat2):
@@ -40,8 +41,10 @@ def check_in_which_partition(lon, lat):
     ret = cluster_li[ret]
     return ret
 
-def get_shortest_path_node(node1,node2):
-    return nx.shortest_path(osm_map,source=node1,target=node2)
 
-def get_shortest_path_length(node1,node2):
-    return nx.shortest_path_length(osm_map,source=node1,target=node2)
+def get_shortest_path_node(node1, node2):
+    return nx.shortest_path(osm_map, source=node1, target=node2)
+
+
+def get_shortest_path_length(node1, node2):
+    return nx.shortest_path_length(osm_map, source=node1, target=node2)

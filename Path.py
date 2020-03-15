@@ -9,6 +9,7 @@ class Path:
     # 元素是(lon, lat) 依timestamp递增顺序排序
     def __init__(self):
         self.create_time = time.time()
+        # 此处的时间需要算偏移
         self.path_node_list = []
 
     def get_position(self, moment):

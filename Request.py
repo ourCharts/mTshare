@@ -1,5 +1,6 @@
 class Request:
     pickup_deadline = 0
+
     def __init__(self, request_id, start_lon, start_lat, end_lon, end_lat, start_node_id, end_node_id, release_time=None, delivery_deadline=None, pickup_deadline=None):
         self.request_id = request_id
         self.start_lon = start_lon

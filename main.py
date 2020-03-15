@@ -20,7 +20,7 @@ import copy
 from tqdm import tqdm
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
-                       passwd='', db='tenman', port=3308, charset='utf8')
+                       passwd='', db='taxidb', port=3308, charset='utf8')
 cursor = conn.cursor(pymysql.cursors.SSCursor)
 
 mobility_cluster = []
@@ -29,6 +29,7 @@ general_mobility_vector = []
 
 TYPICAL_SPEED = 13.8889  # 单位是m/s
 TAXI_TOTAL_NUM = 100
+REQUESTS_TO_PROCESS = 100  # 总共要处理多少个request
 partition_filter_param = 1.0
 
 Lambda = 0.998
@@ -119,7 +120,7 @@ def system_init():
             tmp['taxi_id'])
 
     # 初始化邻接矩阵
-    global node_distance_matrix 
+    global node_distance_matrix
     node_distance_matrix = copy.copy(node_distance.values)
     # print(node_distance_matrix)
     print('done')
@@ -148,7 +149,8 @@ def update(request):
         max_idx = -1
         flag = False
         for idx, gene_it in enumerate(general_mobility_vector):
-            cos_val = cosine_similarity([gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], vec1)
+            cos_val = cosine_similarity(
+                [gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], vec1)
             # 计算出最相似的那个general_mobility_vector
             if cos_val > max_cos:
                 max_idx = idx
@@ -181,7 +183,8 @@ def update(request):
         max_idx = -1
         flag = False
         for idx, gene_it in enumerate(general_mobility_vector):
-            cos_val = cosine_similarity([gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], vec2)
+            cos_val = cosine_similarity(
+                [gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], vec2)
             if cos_val > max_cos:
                 max_cos = cos_val
                 max_idx = idx
@@ -212,17 +215,19 @@ def update(request):
         par_it.taxi_list.clear()
     for taxi_it in taxi_list:
         # print(taxi_it.partition_id_belongto)
-        partition_list[taxi_it.partition_id_belongto].taxi_list.append(int(taxi_it.taxi_id))
+        partition_list[taxi_it.partition_id_belongto].taxi_list.append(
+            int(taxi_it.taxi_id))
 
 
 def taxi_req_matching(req: Request):
     print('In taxi req matching')
     u_lon, u_lat = req.start_lon, req.start_lat
     v_lon, v_lat = req.end_lon, req.end_lat
+    req_start_node = ox.get_nearest_node(osm_map, (u_lat, u_lon))
     nearest_start_id = ox.get_nearest_node(osm_map, (u_lat, u_lon))
     nearest_end_id = ox.get_nearest_node(osm_map, (v_lat, v_lon))
     delta_t = req.delivery_deadline - node_distance_matrix[id_hash_map[nearest_start_id]
-                                                   ][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
+                                                           ][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
     # 得到搜索范围的半径
     search_range = delta_t * TYPICAL_SPEED
 
@@ -230,7 +235,7 @@ def taxi_req_matching(req: Request):
     for node_it in node_list:
         if node_it.cluster_id_belongto in partition_intersected:
             continue
-        dis = get_distance(u_lon, u_lat, node_it.lon, node_it.lat)
+        dis = get_shortest_path_length(req_start_node, node_it)
         if dis <= search_range:
             partition_intersected.add(node_it.cluster_id_belongto)
 
@@ -250,7 +255,8 @@ def taxi_req_matching(req: Request):
     max_cos = -2
     max_idx = -1
     for idx, gene_v in enumerate(general_mobility_vector):
-        cos_val = cosine_similarity([gene_v.lon1, gene_v.lat1, gene_v.lon2, gene_v.lat2], vec)
+        cos_val = cosine_similarity(
+            [gene_v.lon1, gene_v.lat1, gene_v.lon2, gene_v.lat2], vec)
         if cos_val > max_cos:
             max_cos = cos_val
             max_idx = idx
@@ -414,14 +420,12 @@ def basic_routing(Slist, taxi_it):
 
             length = len(taxi_path.path_node_list)
 
-            tmp_list = get_shortest_path_node(
-                node1_landmark, node2_landmark)
+            tmp_list = get_shortest_path_node(node1_landmark, node2_landmark)
 
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
             taxi_path.path_node_list[length] = tmp_list
-            path_distance += get_shortest_path_length(
-                node1_landmark, node2_landmark)
+            path_distance += get_shortest_path_length(node1_landmark, node2_landmark)
 
         Slist[idx]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
@@ -481,7 +485,8 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
 
             if mode:
                 print('mode is basic routing')
-                new_path, cost = basic_routing(Slist, taxi_it)  # 写完basic routing就ok了
+                new_path, cost = basic_routing(
+                    Slist, taxi_it)  # 写完basic routing就ok了
             else:
                 new_path, cost = possibility_routing(Slist, taxi_it)
             if cost - ori_cost < minimum_cost:
@@ -490,13 +495,13 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
                 selected_taxi = taxi_it
                 selected_taxi_path = new_path
 
-    # taxi_list[selected_taxi].request_list.append(req)
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
     if not selected_taxi_path:
-        taxi_list[selected_taxi].path.path_node_list =[]
+        taxi_list[selected_taxi].path.path_node_list = []
+        return selected_taxi, None
     else:
         taxi_list[selected_taxi].path.path_node_list = selected_taxi_path
-    # return selected_taxi, minimum_cost
+        return selected_taxi, selected_taxi_path
 
 
 now_time = 0
@@ -506,14 +511,13 @@ now_time = 0
 def main():
     req_cnt = 0
     system_init()
-    # print(node_distance_matrix)
     order_index = 0
-    
+
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
+        if req_cnt > REQUESTS_TO_PROCESS:
+            break
         now_time = time.time() - TIME_OFFSET
-        # print('now_time = {}'.format(now_time))
-        # print('last_time = {}'.format(last_time))
         reqs = request_fetcher(last_time, now_time)
         last_time = now_time
         if len(reqs) == 0:

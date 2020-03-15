@@ -40,7 +40,7 @@ class Taxi:
         self.update_schedule(moment)
         # 更新经纬度
         print(self.path)
-        if len(self.path.path_node_list)==0:
+        if len(self.path.path_node_list) == 0:
             return
         self.cur_lon, self.cur_lat = self.path.get_position(moment)
         self.partition_id_belongto = check_in_which_partition(

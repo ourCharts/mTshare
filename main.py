@@ -103,7 +103,7 @@ def system_init():
         cid = node_it.cluster_id_belongto
         # print(cid)
         if partition_list[cid] is None:
-            print('is None')
+            # print('is None')
             partition_list[cid] = Partition(cid, node_list=[], taxi_list=[])
             partition_list[cid].node_list.append(int(node_it.node_id))
         else:
@@ -121,7 +121,7 @@ def system_init():
     # 初始化邻接矩阵
     global node_distance_matrix 
     node_distance_matrix = copy.copy(node_distance.values)
-    print(node_distance_matrix)
+    # print(node_distance_matrix)
     print('done')
 
 
@@ -207,11 +207,11 @@ def update(request):
 
     # 重置partition
     global partition_list
-    print(partition_list)
+    # print(partition_list)
     for par_it in partition_list:
         par_it.taxi_list.clear()
     for taxi_it in taxi_list:
-        print(taxi_it.partition_id_belongto)
+        # print(taxi_it.partition_id_belongto)
         partition_list[taxi_it.partition_id_belongto].taxi_list.append(int(taxi_it.taxi_id))
 
 
@@ -480,8 +480,8 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
             Slist.index(insertion[1], end_point)
 
             if mode:
-                new_path, cost = basic_routing(
-                    Slist, taxi_it)  # 写完basic routing就ok了
+                print('mode is basic routing')
+                new_path, cost = basic_routing(Slist, taxi_it)  # 写完basic routing就ok了
             else:
                 new_path, cost = possibility_routing(Slist, taxi_it)
             if cost - ori_cost < minimum_cost:
@@ -503,7 +503,7 @@ now_time = 0
 def main():
     req_cnt = 0
     system_init()
-    print(node_distance_matrix)
+    # print(node_distance_matrix)
     order_index = 0
     
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间

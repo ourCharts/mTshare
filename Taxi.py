@@ -39,6 +39,7 @@ class Taxi:
         self.__last_update_time = moment
         self.update_schedule(moment)
         # 更新经纬度
+        print(self.path)
         if not self.path:
             return
         self.cur_lon, self.cur_lat = self.path.get_position(moment)

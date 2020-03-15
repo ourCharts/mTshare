@@ -19,59 +19,6 @@ import glob
 import copy
 from tqdm import tqdm
 
-conn = pymysql.connect(host='127.0.0.1', user='root',
-                       passwd='', db='taxidb', port=3308, charset='utf8')
-cursor = conn.cursor(pymysql.cursors.SSCursor)
-
-mobility_cluster = []
-general_mobility_vector = []
-
-
-TYPICAL_SPEED = 13.8889  # 单位是m/s
-TAXI_TOTAL_NUM = 100
-REQUESTS_TO_PROCESS = 100  # 总共要处理多少个request
-partition_filter_param = 1.0
-
-Lambda = 0.998
-alpha = 0.999999921837146
-node_list = []
-taxi_list = []  # 里面包含有所有的taxi
-taxi_status_queue = []  # taxi的事件队列
-request_list = []
-partition_list = []
-landmark_list = []
-
-files = glob.glob('./data/node_distance/node_distance_*.csv')
-node_distance = pd.read_csv(files[0])
-node_distance = node_distance.loc[:, ~
-                                  node_distance.columns.str.contains('^Unnamed')]
-for idx in range(1, len(files)):
-    tmp = pd.read_csv(files[idx])
-    tmp = tmp.drop(['Unnamed: 0'], axis=1)
-    node_distance = node_distance.append(tmp)
-
-# 名字为 shortest_path_matrix
-node_distance_matrix = []
-
-
-def cosine_similarity(vec1, vec2):
-    x = [vec1[0], vec1[1], vec1[2], vec1[3]]
-    y = [vec2[0], vec2[1], vec2[2], vec2[3]]
-    sum_xy = 0.0
-    normX = 0.0
-    normY = 0.0
-    for a, b in zip(x, y):
-        sum_xy += a * b
-        normX += a ** 2
-        normY += b ** 2
-    if normX == 0.0 or normY == 0.0:
-        return None
-    else:
-        tmp = sum_xy / ((normX * normY) ** 0.5)
-        if tmp < 0:
-            return -tmp
-        return tmp
-
 
 def get_an_order(idx):
     sql = 'SELECT * FROM myorder ORDER BY start_time LIMIT %d, 1' % idx
@@ -82,17 +29,15 @@ def get_an_order(idx):
 
 def system_init():
     print('System Initiating...')
-    # 晚点添加这个文件, 里面是taxi的基本信息, 包括每辆taxi的编号和初始经纬度
-    taxi_table = pd.read_csv('./data/taxi_info_list.csv')
-    # 初始化node_list, node_list中放的是Node对象
-    df = pd.read_csv('./data/node_list_with_cluster.csv')
+    taxi_table = pd.read_csv('./data/taxi_info_list.csv') 
+    df = pd.read_csv('./data/node_list_with_cluster.csv') 
     for indexs in df.index:
         tmp = df.loc[indexs]
         node_list.append(
             Node(tmp['real_id'], tmp['lon'], tmp['lat'], int(tmp['cluster_id'])))
 
-    # 初始化landmark_list
-    # 晚点添加...里面包含的内容是每个partition的landmark的经纬度.其下标与partition_list的下标一一对应
+
+    # .里面包含的内容是每个partition的landmark的经纬度.其下标与partition_list的下标一一对应
     landmark_table = pd.read_csv('./data/landmark.csv')
     landmark_list = zip(
         landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat'])
@@ -102,9 +47,7 @@ def system_init():
     # 初始化所有partition实例
     for node_it in node_list:
         cid = node_it.cluster_id_belongto
-        # print(cid)
         if partition_list[cid] is None:
-            # print('is None')
             partition_list[cid] = Partition(cid, node_list=[], taxi_list=[])
             partition_list[cid].node_list.append(int(node_it.node_id))
         else:
@@ -143,8 +86,6 @@ def update(request):
     for request_it in request_list:
         vec1 = [request_it.start_lon, request_it.start_lat,
                 request_it.end_lon, request_it.end_lat]
-        # vec1 = MobilityVector(request_it.start_lon, request_it.start_lat, request_it.end_lon,
-        #      request_it.end_lat, 'REQ', request_it.request_id)
         max_cos = -2
         max_idx = -1
         flag = False
@@ -235,7 +176,7 @@ def taxi_req_matching(req: Request):
     for node_it in node_list:
         if node_it.cluster_id_belongto in partition_intersected:
             continue
-        dis = get_shortest_path_length(req_start_node, node_it)
+        dis = get_shortest_path_length(req_start_node, node_it.node_id)
         if dis <= search_range:
             partition_intersected.add(node_it.cluster_id_belongto)
 
@@ -248,6 +189,8 @@ def taxi_req_matching(req: Request):
             if taxi_list[taxi_it].is_available:
                 # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
+    print('taxi_in_intersected')
+    print(taxi_in_intersected)
 
     if len(taxi_in_intersected) == 0:  # 在规定时间内没有taxi能来，所以放弃订单
         return None                    # 放弃订单了
@@ -260,18 +203,20 @@ def taxi_req_matching(req: Request):
         if cos_val > max_cos:
             max_cos = cos_val
             max_idx = idx
-
-    if max_idx == -1:  # 说明cluster为空，所以CaLt是空的
-        candidate_taxi = taxi_in_intersected
-        print('Empty CaLt!')
-    else:  # 计算出CaLt
-        C = mobility_cluster[max_idx]
-        C_li = []
-        for it in C:
-            if it.vector_type == 'TAXI':
-                C_li.append(it.ID)
-    # 取交集, 计算出所有候选taxi的list
-    candidate_taxi = set(partition_intersected).intersection(set(C_li))
+    # if max_idx == -1:  # 说明cluster为空，所以CaLt是空的
+    #     candidate_taxi = taxi_in_intersected
+    #     print('Empty CaLt!')
+    '''
+        cluster不可能为空
+    '''
+    # 计算出CaLt
+    C = mobility_cluster[max_idx]
+    C_li = []
+    for it in C:
+        if it.vector_type == 'TAXI':
+            C_li.append(it.ID)
+    candidate_taxi = set(partition_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
+    
     return candidate_taxi
 
 
@@ -458,7 +403,9 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
     selected_taxi = -1
     selected_taxi_path = None
     res = []
+    print(len(candidate_taxi_list))
     for taxi_it in candidate_taxi_list:
+        print('In taxi scheduling iterating candidate')
         possible_insertion.clear()
         bnd = len(taxi_list[taxi_it].schedule_list)
         if bnd == 1:
@@ -473,8 +420,6 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
         ori_cost = taxi_list[taxi_it].cur_total_cost
         for insertion in possible_insertion:
             Slist = copy.deepcopy(taxi_list[taxi_it].schedule_list)
-
-            # 传引用的意思吗
 
             start_point = {'request_id': req.request_id, 'schedule_type': 'DEPART', 'lon': req.start_lon,
                            'lat': req.start_lat, 'arrival_time': None}  # arrival_time在之后routing的时候确定
@@ -504,9 +449,43 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
         return selected_taxi, selected_taxi_path
 
 
-now_time = 0
-# now_time被刘键聪设为全局变量
+# ==================================全局变量==============================================
 
+
+conn = pymysql.connect(host='127.0.0.1', user='root',
+                       passwd='', db='tenman', port=3308, charset='utf8')
+cursor = conn.cursor(pymysql.cursors.SSCursor)
+
+mobility_cluster = []
+general_mobility_vector = []
+
+
+TYPICAL_SPEED = 13.8889  # 单位是m/s
+TAXI_TOTAL_NUM = 100
+REQUESTS_TO_PROCESS = 100  # 总共要处理多少个request
+partition_filter_param = 1.0
+
+Lambda = 0.998
+alpha = 0.999999921837146
+node_list = []  # Node对象
+taxi_list = []  # Taxi对象
+taxi_status_queue = []  # taxi的事件队列
+request_list = []
+partition_list = []
+landmark_list = []
+
+files = glob.glob('./data/node_distance/node_distance_*.csv')
+node_distance = pd.read_csv(files[0])
+node_distance = node_distance.loc[:, ~
+                                  node_distance.columns.str.contains('^Unnamed')]
+for idx in range(1, len(files)):
+    tmp = pd.read_csv(files[idx])
+    tmp = tmp.drop(['Unnamed: 0'], axis=1)
+    node_distance = node_distance.append(tmp)
+
+node_distance_matrix = []
+now_time = 0
+# ==================================全局变量==============================================
 
 def main():
     req_cnt = 0
@@ -515,6 +494,7 @@ def main():
 
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
+        # input('hello king')
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET
@@ -540,7 +520,6 @@ def main():
 
                 end_node_id = ox.get_nearest_node(
                     osm_map, (req_item[4], req_item[3]))
-
                 print(id_hash_map[start_node_id])
                 print(id_hash_map[end_node_id])
                 time_on_tour = node_distance_matrix[id_hash_map[start_node_id]
@@ -555,8 +534,7 @@ def main():
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
                 candidate_taxi_list = taxi_req_matching(req_item)
-                # if candidate_taxi_list: #如果没有候选taxi会返回none
-                #     sel_taxi, min_cost =
+                #如果没有候选taxi会返回none
                 if not candidate_taxi_list is None:
                     taxi_scheduling(candidate_taxi_list, req_item, 1)
 

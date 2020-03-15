@@ -53,3 +53,24 @@ def get_shortest_path_node(node1, node2):
 
 def get_shortest_path_length(node1, node2):
     return nx.shortest_path_length(osm_map, source=node1, target=node2)
+
+
+
+# 余弦相似度
+def cosine_similarity(vec1, vec2): 
+    x = [vec1[0], vec1[1], vec1[2], vec1[3]]
+    y = [vec2[0], vec2[1], vec2[2], vec2[3]]
+    sum_xy = 0.0
+    normX = 0.0
+    normY = 0.0
+    for a, b in zip(x, y):
+        sum_xy += a * b
+        normX += a ** 2
+        normY += b ** 2
+    if normX == 0.0 or normY == 0.0:
+        return None
+    else:
+        tmp = sum_xy / ((normX * normY) ** 0.5)
+        if tmp < 0:
+            return -tmp
+        return tmp

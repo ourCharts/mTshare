@@ -433,11 +433,11 @@ def basic_routing(Slist, taxi_it):
     taxi_to_first_slist_node_path = get_shortest_path_node(
         taxi_pos_node, taxi_path.path_node_list[0].node_id)
     taxi_path.path_node_list.insert(0, taxi_to_first_slist_node_path)
-    # 加上了taxi目前位置到slist第一个节点的路径
+    # 加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     sum_path_distance += get_shortest_path_length(
         taxi_pos_node, taxi_path.path_node_list[0])
-    # 加上了taxi目前位置到slist第一个节点的路径长度
+    # 加上了taxi目前位置到slist第一个节点的路径长度,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     path_cost = sum_path_distance / TYPICAL_SPEED
     return (taxi_path, path_cost)  # 一个Path对象和Path的cost

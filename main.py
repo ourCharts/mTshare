@@ -215,9 +215,11 @@ def taxi_req_matching(req: Request):
     for it in C:
         if it.vector_type == 'TAXI':
             C_li.append(it.ID)
-    candidate_taxi = set(partition_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
-    
-    return candidate_taxi
+    best_candidate_taxi = set(partition_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
+    secondary__candidate_taxi = set(partition_intersected).difference(set(C_li))
+
+    return best_candidate_taxi, secondary__candidate_taxi
+    # best_candidate_taxi是mv也符合的车，secondary__candidate_taxi是能到达但mv不符合的车
 
 
 def insertion_feasibility_check(taxi_id, req: Request, pos_i, pos_j):  # 在前面插入

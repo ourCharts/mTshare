@@ -25,7 +25,8 @@
 # print('asd')
 # plt.show()
 arr = [1,4,2,4,5]
-for idx,item in enumerate(arr):
-    if item == 4:
-        del arr[idx]
-print(arr)
+arr = set(arr)
+arr1 = [4,2]
+arr1 = set(arr1)
+result = arr.difference(arr1)
+print(result)

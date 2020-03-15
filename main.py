@@ -20,7 +20,7 @@ import copy
 from tqdm import tqdm
 
 conn = pymysql.connect(host='127.0.0.1', user='root',
-                       passwd='', db='taxidb', port=3308, charset='utf8')
+                       passwd='', db='tenman', port=3308, charset='utf8')
 cursor = conn.cursor(pymysql.cursors.SSCursor)
 
 mobility_cluster = []
@@ -492,7 +492,10 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
 
     # taxi_list[selected_taxi].request_list.append(req)
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
-    taxi_list[selected_taxi].path.path_node_list = selected_taxi_path
+    if not selected_taxi_path:
+        taxi_list[selected_taxi].path.path_node_list =[]
+    else:
+        taxi_list[selected_taxi].path.path_node_list = selected_taxi_path
     # return selected_taxi, minimum_cost
 
 

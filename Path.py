@@ -16,7 +16,7 @@ class Path:
 
     def get_position(self, moment):
         index = self.is_over(moment)
-        if self.is_over(moment) < 0:
+        if index < 0:
             length = len(self.path_node_list)
             return self.path_node_list[length-1][1], self.path_node_list[length-1][2]
             '''这里是nodeid，要问lyl如何变成经纬度'''

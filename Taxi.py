@@ -40,13 +40,13 @@ class Taxi:
         self.update_schedule(moment)
         # 更新经纬度
         print(self.path)
-        if not self.path:
+        if len(self.path.path_node_list)==0:
             return
         self.cur_lon, self.cur_lat = self.path.get_position(moment)
         self.partition_id_belongto = check_in_which_partition(
             self.cur_lon, self.cur_lat)
         if self.path.is_over(moment) < 0:
-            self.path = None
+            self.path = Path()
             self.schedule_list = [{'request_id': -1, 'schedule_type': 'NO_ORDER',
                                    'lon': self.cur_lon, 'lat': self.cur_lat, 'arrival_time': self.__last_update_time}]
             self.mobility_vector = []

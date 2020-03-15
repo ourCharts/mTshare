@@ -3,6 +3,7 @@ import osmnx as ox
 import pandas as pd
 import pickle
 import networkx as nx
+import time
 map_file = open('./data/map.pickle', 'rb')
 osm_map = pickle.load(map_file)  # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
 
@@ -15,6 +16,10 @@ tmpp = [i for i in range(len(tli))]
 tool_node_list = zip(tli, tmpp)
 id_hash_map = dict(tool_node_list)
 
+
+SYSTEM_INIT_TIME = time.time()
+EARLIEST_TIME = 1477929720   # 预先从数据库中查询出最早时间
+TIME_OFFSET = SYSTEM_INIT_TIME - EARLIEST_TIME
 
 def rad(deg):
     return (deg / 180.0) * math.pi

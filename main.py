@@ -29,9 +29,6 @@ general_mobility_vector = []
 
 TYPICAL_SPEED = 13.8889  # 单位是m/s
 TAXI_TOTAL_NUM = 100
-EARLIEST_TIME = 1477929720   # 预先从数据库中查询出最早时间, 避免每次都要查询一次. 肯定不会是0, 最后会修改
-TIME_OFFSET = 0
-SYSTEM_INIT_TIME = 0
 partition_filter_param = 1.0
 
 Lambda = 0.998
@@ -508,8 +505,7 @@ def main():
     system_init()
     print(node_distance_matrix)
     order_index = 0
-    SYSTEM_INIT_TIME = time.time()
-    TIME_OFFSET = SYSTEM_INIT_TIME - EARLIEST_TIME
+    
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
         now_time = time.time() - TIME_OFFSET

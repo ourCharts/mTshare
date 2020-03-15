@@ -8,9 +8,11 @@ TYPICAL_SPEED = 13.8889  # 单位是m/s
 class Path:
     # 元素是(lon, lat) 依timestamp递增顺序排序
     def __init__(self):
-        self.create_time = time.time()
+        self.create_time = time.time() - TIME_OFFSET
         # 此处的时间需要算偏移
         self.path_node_list = []
+        # 此处是否应为一个空list?
+        # 如果是空list的话, 会出现out of range的情况
 
     def get_position(self, moment):
         index = self.is_over(moment)

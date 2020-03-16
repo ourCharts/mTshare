@@ -39,8 +39,8 @@ def system_init():
 
     # .里面包含的内容是每个partition的landmark的经纬度.其下标与partition_list的下标一一对应
     landmark_table = pd.read_csv('./data/landmark.csv')
-    landmark_list = zip(
-        landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat'])
+    global landmark_list
+    landmark_list = list(zip(landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat']))
 
     global partition_list
     partition_list = [None] * (max(df.loc[:, 'cluster_id']) + 1)
@@ -58,9 +58,9 @@ def system_init():
         taxi_in_which_partition = check_in_which_partition(
             tmp['init_lon'], tmp['init_lat'])
         taxi_list.append(
-            Taxi(tmp['taxi_id'], tmp['init_lon'], tmp['init_lat'], SYSTEM_INIT_TIME - TIME_OFFSET, partition_id_belongto=taxi_in_which_partition, seat_left=3))
+            Taxi(int(tmp['taxi_id']), tmp['init_lon'], tmp['init_lat'], SYSTEM_INIT_TIME - TIME_OFFSET, partition_id_belongto=taxi_in_which_partition, seat_left=3))
         partition_list[taxi_in_which_partition].taxi_list.append(
-            tmp['taxi_id'])
+            int(tmp['taxi_id']))
 
     # 初始化邻接矩阵
     global node_distance_matrix
@@ -80,6 +80,7 @@ def request_fetcher(time_slot_start, time_slot_end):
 def update(request):
     print('In update')
     for taxi_it in taxi_list:
+        # print('Updating each taxi\'s status')
         taxi_it.update_status(request.release_time)
     mobility_cluster.clear()
     general_mobility_vector.clear()
@@ -171,7 +172,7 @@ def taxi_req_matching(req: Request):
                                                            ][id_hash_map[nearest_end_id]] / TYPICAL_SPEED - req.release_time
     # 得到搜索范围的半径
     search_range = delta_t * TYPICAL_SPEED
-
+    print('search range is {}'.format(search_range))
     partition_intersected = set()
     for node_it in node_list:
         if node_it.cluster_id_belongto in partition_intersected:
@@ -183,9 +184,13 @@ def taxi_req_matching(req: Request):
     # 计算出PzLt
     taxi_in_intersected = []
     for it in partition_intersected:
+        # print('one of the intersected partition: {}'.format(it))
         # partion对象中的taxi_list放的是taxi的id
         for taxi_it in partition_list[it].taxi_list:
-            print('taxi_it = {}'.format(taxi_it))
+            # print('taxi_it = {}'.format(taxi_it))   
+            """
+            bug: partition_intersected中的taix都是一样的
+            """
             if taxi_list[taxi_it].is_available:
                 # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
@@ -213,8 +218,8 @@ def taxi_req_matching(req: Request):
     for it in C:
         if it.vector_type == 'TAXI':
             C_li.append(it.ID)
-    best_candidate_taxi = set(partition_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
-    secondary_candidate_taxi = set(partition_intersected).difference(set(C_li))
+    best_candidate_taxi = set(taxi_in_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
+    secondary_candidate_taxi = set(taxi_in_intersected).difference(set(C_li))
 
     best_candidate_taxi = list(best_candidate_taxi)
     secondary_candidate_taxi = list(secondary_candidate_taxi)
@@ -305,14 +310,17 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
     partition1 = check_in_which_partition(node1['lon'], node1['lat'])
     partition2 = check_in_which_partition(node2['lon'], node2['lat'])
 
+    # print('landmark_list is {}'.format(landmark_list))
+    # print('partition1 is {}'.format(partition1))
     landmark1 = landmark_list[partition1]
+    # print('partition2 is {}'.format(partition2))
     landmark2 = landmark_list[partition2]
 
     node1 = ox.get_nearest_node(osm_map, (landmark1[0], landmark1[1]))
     node2 = ox.get_nearest_node(osm_map, (landmark2[0], landmark2[1]))
 
     # lm1到lm2的travel cost
-    cost_1to2 = node_distance_matrix[node1][node2] / TYPICAL_SPEED
+    cost_1to2 = node_distance_matrix[id_hash_map[node1]][id_hash_map[node2]] / TYPICAL_SPEED
     forever_mobility_vector = MobilityVector(
         landmark1[0], landmark1[1], landmark2[0], landmark2[1], 'REQ', -1)
 
@@ -321,6 +329,12 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
         tmp_lm = landmark_list[idx]
         tmp_vec = MobilityVector(
             landmark1[0], landmark1[1], tmp_lm[0], tmp_lm[1], 'REQ', -1)
+        """
+        tmp_vec必须是一个MobilityVector对象吗?假如后面不需要用到mv类型, 那可以将其修改为
+        一个长度为4的list. 现在如果用mv对象的话, 在计算余弦相似度时, 就会出现'MobilityVector' 
+        object is not subscriptable的错误. 如果修改cosine_similarity的话, 由于有些地方在
+        计算余弦相似度的时候用的是list, 如果这样的话会导致改起来很麻烦
+        """
         # Travel direction rule 来自论文P7左栏
         if cosine_similarity(tmp_vec, forever_mobility_vector) < Lambda:
             continue
@@ -428,8 +442,9 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
                            'lat': req.start_lat, 'arrival_time': None}  # arrival_time在之后routing的时候确定
             end_point = {'request_id': req.request_id, 'schedule_type': 'ARRIVAL',
                          'lon': req.end_lon, 'lat': req.end_lat, 'arrival_time': None}
+            print('type of Slist is {}'.format(type(Slist)))
             Slist.insert(insertion[0], start_point)
-            Slist.index(insertion[1], end_point)
+            Slist.insert(insertion[1], end_point)
 
             if mode:
                 print('mode is basic routing')
@@ -468,8 +483,8 @@ TAXI_TOTAL_NUM = 100
 REQUESTS_TO_PROCESS = 100  # 总共要处理多少个request
 partition_filter_param = 1.0
 
-Lambda = 0.998
-alpha = 0.999999921837146
+Lambda = 0.9
+# alpha = 0.999999921837146
 node_list = []  # Node对象
 taxi_list = []  # Taxi对象
 taxi_status_queue = []  # taxi的事件队列
@@ -542,8 +557,11 @@ def main():
                 print('secondary: ')
                 print(secondary_candidate_list)
                 #如果没有候选taxi会返回none
-                if not candidate_taxi_list is None:
+                # print(candidate_taxi_list is None)
+                if len(candidate_taxi_list) != 0:
                     taxi_scheduling(candidate_taxi_list, req_item, 1)
+                else:
+                    taxi_scheduling(secondary_candidate_list, req_item, 1)
 
 
 main()

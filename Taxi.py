@@ -44,10 +44,14 @@ class Taxi:
         self.__last_update_time = moment
         self.update_schedule(moment)
         # 更新经纬度
-        print(self.path)
+        # print(self.path)
         if len(self.path.path_node_list) == 0:
+            print('len is zero')
             return
+        print('taxi id is {}'.format(self.taxi_id))
+        print('before updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))
         self.cur_lon, self.cur_lat = self.path.get_position(moment)
+        print('after updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))
         self.partition_id_belongto = check_in_which_partition(
             self.cur_lon, self.cur_lat)
         if self.path.is_over(moment) < 0:

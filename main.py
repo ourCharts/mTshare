@@ -240,6 +240,7 @@ def taxi_req_matching(req: Request):
             partition_intersected.add(node_it.cluster_id_belongto)
 
     # 计算出PzLt
+    empty_taxi = []
     taxi_in_intersected = []
     for it in partition_intersected:
         # partion对象中的taxi_list放的是taxi的id
@@ -248,6 +249,8 @@ def taxi_req_matching(req: Request):
             if taxi_list[taxi_it].is_available:
                 # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
+            if taxi_list[taxi_it].is_empty():
+                empty_taxi.append(taxi_list[taxi_it].taxi_id)
 
     if len(taxi_in_intersected) == 0:  # 在规定时间内没有taxi能来，所以放弃订单
         return None                    # 放弃订单了
@@ -271,7 +274,7 @@ def taxi_req_matching(req: Request):
             if it.vector_type == 'TAXI':
                 C_li.append(it.ID)
     # 取交集, 计算出所有候选taxi的list
-    candidate_taxi = set(partition_intersected).intersection(set(C_li))
+    candidate_taxi = (set(partition_intersected).intersection(set(C_li))).union(empty_taxi)
     return candidate_taxi
 
 

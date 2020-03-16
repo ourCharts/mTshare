@@ -20,10 +20,15 @@ class Taxi:
         self.path = Path()  # 元素是(lon, lat)
         self.cur_total_cost = 0
         self.seat_left = seat_left
-        self.capability = 3
+        self.capability = self.seat_left
 
     def is_available(self):
         if self.seat_left > 0:
+            return True
+        return False
+
+    def is_empty(self):
+        if self.seat_left == self.capability:
             return True
         return False
 

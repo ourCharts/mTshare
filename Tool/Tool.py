@@ -71,6 +71,4 @@ def cosine_similarity(vec1, vec2):
         return None
     else:
         tmp = sum_xy / ((normX * normY) ** 0.5)
-        if tmp < 0:
-            return -tmp
         return tmp

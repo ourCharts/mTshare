@@ -321,20 +321,12 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
 
     # lm1到lm2的travel cost
     cost_1to2 = node_distance_matrix[id_hash_map[node1]][id_hash_map[node2]] / TYPICAL_SPEED
-    forever_mobility_vector = MobilityVector(
-        landmark1[0], landmark1[1], landmark2[0], landmark2[1], 'REQ', -1)
+    forever_mobility_vector = [landmark1[0], landmark1[1], landmark2[0], landmark2[1]]
 
     filtered_partition = []
     for idx, one_partition in enumerate(partition_list):
         tmp_lm = landmark_list[idx]
-        tmp_vec = MobilityVector(
-            landmark1[0], landmark1[1], tmp_lm[0], tmp_lm[1], 'REQ', -1)
-        """
-        tmp_vec必须是一个MobilityVector对象吗?假如后面不需要用到mv类型, 那可以将其修改为
-        一个长度为4的list. 现在如果用mv对象的话, 在计算余弦相似度时, 就会出现'MobilityVector' 
-        object is not subscriptable的错误. 如果修改cosine_similarity的话, 由于有些地方在
-        计算余弦相似度的时候用的是list, 如果这样的话会导致改起来很麻烦
-        """
+        tmp_vec = [landmark1[0], landmark1[1], tmp_lm[0], tmp_lm[1]]
         # Travel direction rule 来自论文P7左栏
         if cosine_similarity(tmp_vec, forever_mobility_vector) < Lambda:
             continue

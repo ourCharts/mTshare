@@ -216,6 +216,9 @@ def taxi_req_matching(req: Request):
     best_candidate_taxi = set(partition_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
     secondary_candidate_taxi = set(partition_intersected).difference(set(C_li))
 
+    best_candidate_taxi = list(best_candidate_taxi)
+    secondary_candidate_taxi = list(secondary_candidate_taxi)
+
     return best_candidate_taxi, secondary_candidate_taxi
     # best_candidate_taxi是mv也符合的车，secondary_candidate_taxi是能到达但mv不符合的车
 
@@ -533,7 +536,11 @@ def main():
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
-                candidate_taxi_list = taxi_req_matching(req_item)
+                candidate_taxi_list, secondary_candidate_list = taxi_req_matching(req_item)
+                print('candidate: ')
+                print(candidate_taxi_list)
+                print('secondary: ')
+                print(secondary_candidate_list)
                 #如果没有候选taxi会返回none
                 if not candidate_taxi_list is None:
                     taxi_scheduling(candidate_taxi_list, req_item, 1)

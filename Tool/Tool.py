@@ -57,18 +57,31 @@ def get_shortest_path_length(node1, node2):
 
 
 # 余弦相似度
-def cosine_similarity(vec1, vec2): 
-    x = [vec1[0], vec1[1], vec1[2], vec1[3]]
-    y = [vec2[0], vec2[1], vec2[2], vec2[3]]
-    sum_xy = 0.0
-    normX = 0.0
-    normY = 0.0
-    for a, b in zip(x, y):
-        sum_xy += a * b
-        normX += a ** 2
-        normY += b ** 2
-    if normX == 0.0 or normY == 0.0:
-        return None
-    else:
-        tmp = sum_xy / ((normX * normY) ** 0.5)
-        return tmp
+def cosine_similarity(vec1,vec2):
+    x = [vec1[2]-vec1[0],vec1[3]-vec1[1]]
+    y = [vec2[2]-vec2[0],vec2[3]-vec2[1]] 
+    result1=0.0
+    result2=0.0
+    result3=0.0
+    for i in range(len(x)):
+        result1+=x[i]*y[i]   #sum(X*Y)
+        result2+=x[i]**2     #sum(X*X)
+        result3+=y[i]**2     #sum(Y*Y)
+
+    return result1/((result2*result3)**0.5)
+
+# def cosine_similarity(vec1, vec2): 
+#     x = [vec1[0], vec1[1], vec1[2], vec1[3]]
+#     y = [vec2[0], vec2[1], vec2[2], vec2[3]]
+#     sum_xy = 0.0
+#     normX = 0.0
+#     normY = 0.0
+#     for a, b in zip(x, y):
+#         sum_xy += a * b
+#         normX += a ** 2
+#         normY += b ** 2
+#     if normX == 0.0 or normY == 0.0:
+#         return None
+#     else:
+#         tmp = sum_xy / ((normX * normY) ** 0.5)
+#         return tmp

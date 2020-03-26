@@ -33,6 +33,8 @@ class Taxi:
         return False
 
     def update_schedule(self, moment):
+        if len(self.schedule_list) == 1 and self.schedule_list[0]['request_id'] == -1:
+            return
         for idx, schedule_node in enumerate(self.schedule_list):
             if schedule_node['arrival_time'] < moment:
                 del self.schedule_list[idx]
@@ -44,9 +46,8 @@ class Taxi:
         self.__last_update_time = moment
         self.update_schedule(moment)
         # 更新经纬度
-        # print(self.path)
         if len(self.path.path_node_list) == 0:
-            print('len is zero')
+            # print('len is zero')
             return
         print('taxi id is {}'.format(self.taxi_id))
         print('before updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))

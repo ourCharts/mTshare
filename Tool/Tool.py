@@ -60,6 +60,10 @@ def get_shortest_path_length(node1, node2):
 def cosine_similarity(vec1,vec2):
     x = [vec1[2]-vec1[0],vec1[3]-vec1[1]]
     y = [vec2[2]-vec2[0],vec2[3]-vec2[1]] 
+    print('vec:')
+    print(vec1,vec2)
+    print('y:')
+    print(y)
     result1=0.0
     result2=0.0
     result3=0.0
@@ -67,7 +71,10 @@ def cosine_similarity(vec1,vec2):
         result1+=x[i]*y[i]   #sum(X*Y)
         result2+=x[i]**2     #sum(X*X)
         result3+=y[i]**2     #sum(Y*Y)
-
+        print('y[i]')
+        print(y[i],y[i]**2)
+        print('result:')
+        print(result2,result3)
     return result1/((result2*result3)**0.5)
 
 # def cosine_similarity(vec1, vec2): 

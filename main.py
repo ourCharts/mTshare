@@ -325,6 +325,8 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
 
     filtered_partition = []
     for idx, one_partition in enumerate(partition_list):
+        if partition1 == idx:  #如果指向起点的partition就跳过
+            continue
         tmp_lm = landmark_list[idx]
         tmp_vec = [landmark1[0], landmark1[1], tmp_lm[0], tmp_lm[1]]
         # Travel direction rule 来自论文P7左栏
@@ -332,8 +334,8 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
             continue
         # Travel cost rule
         tmp_node = ox.get_nearest_node(osm_map, (tmp_lm[0], tmp_lm[1]))
-        cost_1totmp = node_distance_matrix[node1][tmp_node] / TYPICAL_SPEED
-        cost_tmpto2 = node_distance_matrix[tmp_node][node2] / TYPICAL_SPEED
+        cost_1totmp = node_distance_matrix[id_hash_map[node1]][id_hash_map[tmp_node]] / TYPICAL_SPEED
+        cost_tmpto2 = node_distance_matrix[id_hash_map[tmp_node]][id_hash_map[node2]] / TYPICAL_SPEED
         if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2:
             filtered_partition.append((one_partition, cost_1totmp))
 
@@ -373,21 +375,28 @@ def basic_routing(Slist, taxi_it):
             node2_landmark = landmark_list[node2]
 
             length = len(taxi_path.path_node_list)
-
-            tmp_list = get_shortest_path_node(node1_landmark, node2_landmark)
+            print(node1_landmark,node2_landmark)
+            print('-------------------')
+            tmp_list = get_shortest_path_node(ox.get_nearest_node(osm_map,(node1_landmark[0],node1_landmark[1])), 
+                        ox.get_nearest_node(osm_map,(node2_landmark[0],node2_landmark[1])))
 
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
-            taxi_path.path_node_list[length] = tmp_list
-            path_distance += get_shortest_path_length(node1_landmark, node2_landmark)
+            taxi_path.path_node_list[length:] = tmp_list
+            
+            path_distance += get_shortest_path_length(ox.get_nearest_node(osm_map,(node1_landmark[0],node1_landmark[1])), 
+                        ox.get_nearest_node(osm_map,(node2_landmark[0],node2_landmark[1])))
 
         Slist[idx]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
-
+    print('395*****************')
+    print(taxi_list[taxi_it].cur_lon)
+    print(taxi_list[taxi_it].cur_lat)
+    print('395*****************')
     taxi_pos_node = ox.get_nearest_node(
-        osm_map, (taxi_it['cur_lon'], taxi_it['cur_lat']))
+        osm_map, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
     taxi_to_first_slist_node_path = get_shortest_path_node(
         taxi_pos_node, taxi_path.path_node_list[0].node_id)
     taxi_path.path_node_list.insert(0, taxi_to_first_slist_node_path)
@@ -412,7 +421,11 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
     selected_taxi = -1
     selected_taxi_path = None
     res = []
+    print("我在423***************")
+    print(taxi_list[0].cur_lat)
     print(len(candidate_taxi_list))
+    print(candidate_taxi_list)
+    print("我在423***************")
     for taxi_it in candidate_taxi_list:
         print('In taxi scheduling iterating candidate')
         possible_insertion.clear()
@@ -504,7 +517,8 @@ def main():
 
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
-        # input('hello king')
+        input('我在518行，按下回车开始')
+        print(taxi_list[0].cur_lon,taxi_list[0].cur_lat)
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET

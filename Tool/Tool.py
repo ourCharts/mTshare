@@ -21,6 +21,7 @@ SYSTEM_INIT_TIME = time.time()
 EARLIEST_TIME = 1477929720   # 预先从数据库中查询出最早时间
 TIME_OFFSET = SYSTEM_INIT_TIME - EARLIEST_TIME
 
+
 def rad(deg):
     return (deg / 180.0) * math.pi
 
@@ -55,22 +56,21 @@ def get_shortest_path_length(node1, node2):
     return nx.shortest_path_length(osm_map, source=node1, target=node2)
 
 
-
 # 余弦相似度
-def cosine_similarity(vec1,vec2):
-    x = [vec1[2]-vec1[0],vec1[3]-vec1[1]]
-    y = [vec2[2]-vec2[0],vec2[3]-vec2[1]] 
-    result1=0.0
-    result2=0.0
-    result3=0.0
+def cosine_similarity(vec1, vec2):
+    x = [vec1[2]-vec1[0], vec1[3]-vec1[1]]
+    y = [vec2[2]-vec2[0], vec2[3]-vec2[1]]
+    result1 = 0.0
+    result2 = 0.0
+    result3 = 0.0
     for i in range(len(x)):
-        result1+=x[i]*y[i]   #sum(X*Y)
-        result2+=x[i]**2     #sum(X*X)
-        result3+=y[i]**2     #sum(Y*Y)
+        result1 += x[i]*y[i]  # sum(X*Y)
+        result2 += x[i]**2  # sum(X*X)
+        result3 += y[i]**2  # sum(Y*Y)
 
     return result1/((result2*result3)**0.5)
 
-# def cosine_similarity(vec1, vec2): 
+# def cosine_similarity(vec1, vec2):
 #     x = [vec1[0], vec1[1], vec1[2], vec1[3]]
 #     y = [vec2[0], vec2[1], vec2[2], vec2[3]]
 #     sum_xy = 0.0

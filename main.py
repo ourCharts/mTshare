@@ -20,6 +20,7 @@ import copy
 from tqdm import tqdm
 
 
+
 def get_an_order(idx):
     sql = 'SELECT * FROM myorder ORDER BY start_time LIMIT %d, 1' % idx
     cursor.execute(sql)
@@ -29,18 +30,18 @@ def get_an_order(idx):
 
 def system_init():
     print('System Initiating...')
-    taxi_table = pd.read_csv('./data/taxi_info_list.csv') 
-    df = pd.read_csv('./data/node_list_with_cluster.csv') 
+    taxi_table = pd.read_csv('./data/taxi_info_list.csv')
+    df = pd.read_csv('./data/node_list_with_cluster.csv')
     for indexs in df.index:
         tmp = df.loc[indexs]
         node_list.append(
             Node(tmp['real_id'], tmp['lon'], tmp['lat'], int(tmp['cluster_id'])))
 
-
     # .里面包含的内容是每个partition的landmark的经纬度.其下标与partition_list的下标一一对应
     landmark_table = pd.read_csv('./data/landmark.csv')
     global landmark_list
-    landmark_list = list(zip(landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat']))
+    landmark_list = list(
+        zip(landmark_table.loc[:, 'lon'], landmark_table.loc[:, 'lat']))
 
     global partition_list
     partition_list = [None] * (max(df.loc[:, 'cluster_id']) + 1)
@@ -53,6 +54,7 @@ def system_init():
         else:
             partition_list[cid].node_list.append(int(node_it.node_id))
 
+    global taxi_list
     for taxi_it in taxi_table.index:
         tmp = taxi_table.loc[taxi_it]
         taxi_in_which_partition = check_in_which_partition(
@@ -187,9 +189,9 @@ def taxi_req_matching(req: Request):
         # print('one of the intersected partition: {}'.format(it))
         # partion对象中的taxi_list放的是taxi的id
         for taxi_it in partition_list[it].taxi_list:
-            # print('taxi_it = {}'.format(taxi_it))   
+            # print('taxi_it = {}'.format(taxi_it))
             """
-            bug: partition_intersected中的taix都是一样的
+            bug: partition_intersected中的taxi都是一样的
             """
             if taxi_list[taxi_it].is_available:
                 # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
@@ -218,7 +220,8 @@ def taxi_req_matching(req: Request):
     for it in C:
         if it.vector_type == 'TAXI':
             C_li.append(it.ID)
-    best_candidate_taxi = set(taxi_in_intersected).intersection(set(C_li))# 取交集, 计算出所有候选taxi的list
+    best_candidate_taxi = set(taxi_in_intersected).intersection(
+        set(C_li))  # 取交集, 计算出所有候选taxi的list
     secondary_candidate_taxi = set(taxi_in_intersected).difference(set(C_li))
 
     best_candidate_taxi = list(best_candidate_taxi)
@@ -320,8 +323,10 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
     node2 = ox.get_nearest_node(osm_map, (landmark2[0], landmark2[1]))
 
     # lm1到lm2的travel cost
-    cost_1to2 = node_distance_matrix[id_hash_map[node1]][id_hash_map[node2]] / TYPICAL_SPEED
-    forever_mobility_vector = [landmark1[0], landmark1[1], landmark2[0], landmark2[1]]
+    cost_1to2 = node_distance_matrix[id_hash_map[node1]
+                                     ][id_hash_map[node2]] / TYPICAL_SPEED
+    forever_mobility_vector = [landmark1[0],
+                               landmark1[1], landmark2[0], landmark2[1]]
 
     filtered_partition = []
     for idx, one_partition in enumerate(partition_list):
@@ -362,7 +367,7 @@ def basic_routing(Slist, taxi_it):
         filtered_partition = partition_filter(Slist[idx], Slist[idx-1])
 
         for index, p_node in enumerate(filtered_partition):
-            if index == len(filtered_partition)-1:
+            if index == len(filtered_partition) - 1:
                 break
 
             # 得到partition id在partition_list中的下表
@@ -379,7 +384,8 @@ def basic_routing(Slist, taxi_it):
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
             taxi_path.path_node_list[length] = tmp_list
-            path_distance += get_shortest_path_length(node1_landmark, node2_landmark)
+            path_distance += get_shortest_path_length(
+                node1_landmark, node2_landmark)
 
         Slist[idx]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
@@ -497,6 +503,7 @@ node_distance_matrix = []
 now_time = 0
 # ==================================全局变量==============================================
 
+
 def main():
     req_cnt = 0
     system_init()
@@ -504,6 +511,9 @@ def main():
 
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
+        input('press enter to start')
+        print(type(taxi_list[0]))
+        print(taxi_list[0].cur_lon, taxi_list[0].cur_lat)
         # input('hello king')
         if req_cnt > REQUESTS_TO_PROCESS:
             break
@@ -543,12 +553,13 @@ def main():
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
-                candidate_taxi_list, secondary_candidate_list = taxi_req_matching(req_item)
+                candidate_taxi_list, secondary_candidate_list = taxi_req_matching(
+                    req_item)
                 print('candidate: ')
                 print(candidate_taxi_list)
                 print('secondary: ')
                 print(secondary_candidate_list)
-                #如果没有候选taxi会返回none
+                # 如果没有候选taxi会返回none
                 # print(candidate_taxi_list is None)
                 if len(candidate_taxi_list) != 0:
                     taxi_scheduling(candidate_taxi_list, req_item, 1)

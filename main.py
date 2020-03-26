@@ -312,7 +312,8 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
     # 根据论文P7
     partition1 = check_in_which_partition(node1['lon'], node1['lat'])
     partition2 = check_in_which_partition(node2['lon'], node2['lat'])
-
+    if partition1 == partition2:
+        return [partition_list[partition1]]
     # print('landmark_list is {}'.format(landmark_list))
     # print('partition1 is {}'.format(partition1))
     landmark1 = landmark_list[partition1]
@@ -330,15 +331,32 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
 
     filtered_partition = []
     for idx, one_partition in enumerate(partition_list):
+        if partition1 == idx:  #如果指向起点的partition就跳过
+            continue
         tmp_lm = landmark_list[idx]
         tmp_vec = [landmark1[0], landmark1[1], tmp_lm[0], tmp_lm[1]]
+        print('我在332-------------------------')
+        print(partition1,idx)
+        debug1 = partition_list[partition1]
+        debug2 = partition_list[idx]
+        if debug1 == debug2:
+            print(True)
+        else:
+            print(False)
+        debug1 = landmark_list[partition1]
+        debug2 = landmark_list[idx]
+        if debug1 == debug2:
+            print(True)
+        else:
+            print(False)            
+        print(tmp_vec)
         # Travel direction rule 来自论文P7左栏
         if cosine_similarity(tmp_vec, forever_mobility_vector) < Lambda:
             continue
         # Travel cost rule
         tmp_node = ox.get_nearest_node(osm_map, (tmp_lm[0], tmp_lm[1]))
-        cost_1totmp = node_distance_matrix[node1][tmp_node] / TYPICAL_SPEED
-        cost_tmpto2 = node_distance_matrix[tmp_node][node2] / TYPICAL_SPEED
+        cost_1totmp = node_distance_matrix[id_hash_map[node1]][id_hash_map[tmp_node]] / TYPICAL_SPEED
+        cost_tmpto2 = node_distance_matrix[id_hash_map[tmp_node]][id_hash_map[node2]] / TYPICAL_SPEED
         if cost_1totmp + cost_tmpto2 <= (1 + partition_filter_param) * cost_1to2:
             filtered_partition.append((one_partition, cost_1totmp))
 
@@ -378,8 +396,10 @@ def basic_routing(Slist, taxi_it):
             node2_landmark = landmark_list[node2]
 
             length = len(taxi_path.path_node_list)
-
-            tmp_list = get_shortest_path_node(node1_landmark, node2_landmark)
+            print(node1_landmark,node2_landmark)
+            print('-------------------')
+            tmp_list = get_shortest_path_node(ox.get_nearest_node(osm_map,(node1_landmark[0],node1_landmark[1])), 
+                        ox.get_nearest_node(osm_map,(node2_landmark[0],node2_landmark[1])))
 
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
@@ -391,16 +411,19 @@ def basic_routing(Slist, taxi_it):
 
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
-
+    print('395*****************')
+    print(taxi_list[taxi_it].cur_lon)
+    print(taxi_list[taxi_it].cur_lat)
+    print('395*****************')
     taxi_pos_node = ox.get_nearest_node(
-        osm_map, (taxi_it['cur_lon'], taxi_it['cur_lat']))
+        osm_map, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
     taxi_to_first_slist_node_path = get_shortest_path_node(
         taxi_pos_node, taxi_path.path_node_list[0].node_id)
     taxi_path.path_node_list.insert(0, taxi_to_first_slist_node_path)
     # 加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     sum_path_distance += get_shortest_path_length(
-        taxi_pos_node, taxi_path.path_node_list[0])
+        taxi_pos_node, taxi_path.path_node_list[0][0])
     # 加上了taxi目前位置到slist第一个节点的路径长度,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     path_cost = sum_path_distance / TYPICAL_SPEED
@@ -418,7 +441,11 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
     selected_taxi = -1
     selected_taxi_path = None
     res = []
+    print("我在423***************")
+    print(taxi_list[0].cur_lat)
     print(len(candidate_taxi_list))
+    print(candidate_taxi_list)
+    print("我在423***************")
     for taxi_it in candidate_taxi_list:
         print('In taxi scheduling iterating candidate')
         possible_insertion.clear()
@@ -508,13 +535,12 @@ def main():
     req_cnt = 0
     system_init()
     order_index = 0
-
+    print(landmark_list[2])
+    print(landmark_list[11])
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
-        input('press enter to start')
-        print(type(taxi_list[0]))
-        print(taxi_list[0].cur_lon, taxi_list[0].cur_lat)
-        # input('hello king')
+        input('我在518行，按下回车开始')
+        print(taxi_list[0].cur_lon,taxi_list[0].cur_lat)
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET

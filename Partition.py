@@ -9,7 +9,6 @@ handle.setFormatter(fmt)
 logger.addHandler(handle)
 
 class Partition(object):
-    __node_list = []
     def __init__(self, partition_id, node_list, taxi_list):
         self.partition_id = partition_id
         self.node_list = node_list

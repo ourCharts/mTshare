@@ -398,8 +398,7 @@ def basic_routing(Slist, taxi_it):
             length = len(taxi_path.path_node_list)
             print(node1_landmark,node2_landmark)
             print('-------------------')
-            tmp_list = get_shortest_path_node(ox.get_nearest_node(osm_map,(node1_landmark[0],node1_landmark[1])), 
-                        ox.get_nearest_node(osm_map,(node2_landmark[0],node2_landmark[1])))
+            tmp_list = get_shortest_path_node(node1_landmark[1], node2_landmark[1])
 
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
@@ -407,7 +406,7 @@ def basic_routing(Slist, taxi_it):
             """
             landmark上的点就是osm地图上的节点, 所以可以直接调用get_shortest_path_length
             """
-            path_distance += get_shortest_path_length(node1_landmark, node2_landmark)
+            path_distance += get_shortest_path_length(node1_landmark[1], node2_landmark[1])
 
         Slist[idx]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 

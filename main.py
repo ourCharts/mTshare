@@ -129,7 +129,7 @@ def update(request):
         flag = False
         for idx, gene_it in enumerate(general_mobility_vector):
             cos_val = cosine_similarity(
-                [gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], vec2)
+                [gene_it.lon1, gene_it.lat1, gene_it.lon2, gene_it.lat2], [vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2])
             if cos_val > max_cos:
                 max_cos = cos_val
                 max_idx = idx
@@ -152,9 +152,9 @@ def update(request):
         else:
             print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
             mobility_cluster.append(
-                [MobilityVector(vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id)])
+                [MobilityVector(vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id)])
             general_mobility_vector.append(MobilityVector(
-                vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
+                vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id))
 
     # 重置partition
     global partition_list
@@ -471,7 +471,7 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
                 selected_taxi_path = new_path
 
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
-
+    taxi_list[selected_taxi].seat_left -= 1
     if not selected_taxi_path:
         taxi_list[selected_taxi].path.path_node_list = []
         return selected_taxi, None

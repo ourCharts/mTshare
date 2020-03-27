@@ -12,6 +12,12 @@ class Path:
         # 此处的时间需要算偏移
         self.path_node_list = []
 
+
+    def get_node_list(self):
+        print('Showing node_list:')
+        for node in self.path_node_list:
+            print(node.lon,node.lat)
+
     def get_position(self, moment):
         index = self.is_over(moment)
         if index == -1:

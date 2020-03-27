@@ -152,11 +152,9 @@ def update(request):
 
     # 重置partition
     global partition_list
-    # print(partition_list)
     for par_it in partition_list:
         par_it.taxi_list.clear()
     for taxi_it in taxi_list:
-        # print(taxi_it.partition_id_belongto)
         partition_list[taxi_it.partition_id_belongto].taxi_list.append(
             int(taxi_it.taxi_id))
 
@@ -174,11 +172,12 @@ def taxi_req_matching(req: Request):
     search_range = delta_t * TYPICAL_SPEED
     print('search range is {}'.format(search_range))
     partition_intersected = set()
-    for node_it in node_list:
+    for idx,node_it in enumerate(node_list):
         if node_it.cluster_id_belongto in partition_intersected:
             continue
         dis = get_shortest_path_length(req_start_node, node_it.node_id)
         if dis <= search_range:
+            print('第{}个点的距离是：{}'.format(idx,dis))
             partition_intersected.add(node_it.cluster_id_belongto)
 
     # 计算出PzLt
@@ -359,21 +358,12 @@ def basic_routing(Slist, taxi_it):
     # 根据论文P7
     taxi_path = Path()
     sum_path_distance = 0
-    if taxi_it == 2:
-        print('This is the Slist')
-        for idx,s_node in enumerate(Slist):
-            print('{}:{},{}'.format(idx,s_node['lon'],s_node['lat']))
     for idx, s_node in enumerate(Slist):
-        if taxi_it == 2:
-            print('现在是{}'.format(idx))
         if idx == len(Slist) - 1:
             break
         path_distance = 0
         filtered_partition = partition_filter(Slist[idx], Slist[idx+1])
-        # if taxi_it == 2:
-        #     print('This is the filtered_partition')
-        #     for idx,s_node in enumerate(filtered_partition):
-        #         print('{}:{},{}'.format(idx,s_node['lon'],s_node['lat']))
+
         for index, p_node in enumerate(filtered_partition):
             if index == len(filtered_partition) - 1:
                 break
@@ -398,9 +388,7 @@ def basic_routing(Slist, taxi_it):
             path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
         
         Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
-        if taxi_it == 2:
-            print('现在时间：{}'.format(now_time))
-            print("{} is:{}".format(idx,Slist[idx]['arrival_time']))
+
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
     taxi_pos_node = ox.get_nearest_node(
@@ -431,13 +419,8 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
     selected_taxi = -1
     selected_taxi_path = None
     res = []
-    # print("我在423***************")
-    # print(taxi_list[0].cur_lat)
-    # print(len(candidate_taxi_list))
-    # print(candidate_taxi_list)
-    # print("我在423***************")
+
     for taxi_it in candidate_taxi_list:
-        # print('In taxi scheduling iterating candidate')
         possible_insertion.clear()
         bnd = len(taxi_list[taxi_it].schedule_list)
         if bnd == 1:
@@ -462,7 +445,6 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
             Slist.insert(insertion[1], end_point)
 
             if mode:
-                # print('mode is basic routing')
                 new_path, cost = basic_routing(
                     Slist, taxi_it)  # 写完basic routing就ok了
             else:
@@ -522,14 +504,13 @@ now_time = 0
 
 
 def main():
-    print('asd')
     global now_time
     req_cnt = 0
     system_init()
     order_index = 0
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
-        # input('我在518行，按下回车开始')
+        input('我在518行，按下回车开始')
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET
@@ -539,8 +520,8 @@ def main():
             continue
         else:
             for req_item in tqdm(reqs, desc='Processing requests...'):
-                # input('新来一个订单，按下回车继续')
-                print('现在时间：{}'.format(now_time))
+                input('新来一个订单，按下回车继续')
+                
                 end_time = req_item[1] + \
                     datetime.timedelta(minutes=15).seconds
                 """
@@ -557,14 +538,14 @@ def main():
 
                 end_node_id = ox.get_nearest_node(
                     osm_map, (req_item[4], req_item[3]))
-                # print(id_hash_map[start_node_id])
-                # print(id_hash_map[end_node_id])
                 time_on_tour = node_distance_matrix[id_hash_map[start_node_id]
                                                     ][id_hash_map[end_node_id]]
 
                 req_item = Request(req_cnt, req_item[3], req_item[4], req_item[5],
                                    req_item[6], start_node_id, end_node_id, req_item[1], req_item[2])  # 打车的时候难道还能给你输入到达的ddl的吗???????????
-                print(req_item.start_lon,req_item.start_lat,req_item.end_lon,req_item.end_lat)
+                print('现在时间：{}'.format(now_time))
+                print('订单消息：')  
+                print('起点经纬度：{}  {},终点经纬度：{}  {}'.format(req_item.start_lon,req_item.start_lat,req_item.end_lon,req_item.end_lat))
                 req_cnt += 1
                 req_item.config_pickup_deadline(
                     req_item.delivery_deadline - time_on_tour)
@@ -586,7 +567,7 @@ def main():
                 show_taxi = taxi_list[chosen_taxi]
                 print(chosen_taxi)
                 print(show_taxi.path.path_node_list)
-                print(show_taxi.schedule_list)
+                show_taxi.show_schedule()
                 print('末尾末尾-----------------------------------------')
 
 

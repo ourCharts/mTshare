@@ -17,7 +17,7 @@ class Taxi:
         self.__last_update_time = init_last_update_time
         self.partition_id_belongto = partition_id_belongto
         self.mobility_vector = mobility_vector
-        self.path = Path()  
+        self.path = Path(init_last_update_time)  
         self.cur_total_cost = 0
         self.seat_left = seat_left
         self.capability = self.seat_left
@@ -75,7 +75,11 @@ class Taxi:
         self.show_schedule()
         print('这里是74行-------------------------------')
         if self.path.is_over(moment) == -1 or len(self.schedule_list) == 0:
-            self.path = Path()
+            if self.path.is_over(moment) == -1:
+                print("self.path.is_over(moment)")
+            else:
+                print("len(self.schedule_list) == 0")
+            self.path = Path(moment)
             self.schedule_list = [{'request_id': -1, 'schedule_type': 'NO_ORDER',
                                    'lon': self.cur_lon, 'lat': self.cur_lat, 'arrival_time': self.__last_update_time}]
             self.mobility_vector = None

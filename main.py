@@ -228,8 +228,6 @@ def taxi_req_matching(req: Request):
             C_li.append(it.ID)
         else:
             print('FUCK')
-    print('taxi_in_intersected is: ')
-    print(taxi_in_intersected)
 
     print('C_li is: ')
     print(C_li)
@@ -371,10 +369,9 @@ def partition_filter(node1, node2):  # 返回一个数组，组成元素是parti
     return filtered_partition
 
 
-def basic_routing(Slist, taxi_it):
+def basic_routing(Slist, taxi_it):    # 根据论文P7
     # print('In basic routing')
-    # 根据论文P7
-    taxi_path = Path()
+    taxi_path = Path(now_time)
     sum_path_distance = 0
     for idx, s_node in enumerate(Slist):
         if idx == len(Slist) - 1:
@@ -391,30 +388,22 @@ def basic_routing(Slist, taxi_it):
             # 得到partition id在partition_list中的下表
             node2 = partition_list.index(filtered_partition[index+1])
             node2_landmark = landmark_list[node2]
-            # print("node1_landmark:{}".node1_landmark)
             length = len(taxi_path.path_node_list)
-            # print(node1_landmark,node2_landmark)
-            # print('-------------------')
             tmp_list = get_shortest_path_node(node_list[node1_landmark[2]].node_id,node_list[node1_landmark[2]].node_id)
 
             tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
             taxi_path.path_node_list[length: ] = tmp_list
-            """
-            landmark上的点就是osm地图上的节点, 所以可以直接调用get_shortest_path_length
-            """
             
 
             path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
-        if taxi_it == 8:
-            print('taxi 8的距离：')
-            print(path_distance)
+        # if taxi_it == 8:
+        #     print('taxi 8的距离：')
+        #     print(path_distance)
         Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
-        if taxi_it == 8:
-            print('现在时间：{}'.format(now_time))
-            print('taxi 8的时间：')
-            print(Slist[idx+1]['arrival_time'])
+        # if taxi_it == 8:
+        #     print('taxi 8到达{}的时间：{}'.format(idx+1,Slist[idx+1]['arrival_time']))
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
     taxi_pos_node = ox.get_nearest_node(
@@ -482,6 +471,7 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
                 selected_taxi_path = new_path
 
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
+
     if not selected_taxi_path:
         taxi_list[selected_taxi].path.path_node_list = []
         return selected_taxi, None
@@ -568,7 +558,7 @@ def main():
                                                     ][id_hash_map[end_node_id]]
 
                 req_item = Request(req_cnt, req_item[3], req_item[4], req_item[5],
-                                   req_item[6], start_node_id, end_node_id, req_item[1], req_item[2])  # 打车的时候难道还能给你输入到达的ddl的吗???????????
+                                   req_item[6], start_node_id, end_node_id, req_item[1], req_item[2])  # 打车的时候难道还能给你输入的ddl的吗???????????
                 print('现在时间：{}'.format(now_time))
                 print('订单消息：')  
                 print('起点经纬度：{}  {},终点经纬度：{}  {}'.format(req_item.start_lon,req_item.start_lat,req_item.end_lon,req_item.end_lat))
@@ -578,6 +568,8 @@ def main():
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
+                print('看看taxi 8的schedule:')
+                taxi_list[8].show_schedule()
                 candidate_taxi_list, secondary_candidate_list = taxi_req_matching(
                     req_item)
                 print('candidate: ')

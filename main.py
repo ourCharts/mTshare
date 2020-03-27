@@ -119,7 +119,7 @@ def update(request):
 
     for taxi_it in taxi_list:
         vec2 = taxi_it.mobility_vector
-        if len(vec2) == 0 or taxi_it.seat_left == taxi_it.capability:
+        if vec2 == None or taxi_it.seat_left == taxi_it.capability:
             continue
         max_cos = -2
         max_idx = -1
@@ -407,11 +407,13 @@ def basic_routing(Slist, taxi_it):
         osm_map, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
     taxi_to_first_slist_node_path = get_shortest_path_node(
         taxi_pos_node, taxi_path.path_node_list[0].node_id)
-    taxi_path.path_node_list.insert(0, taxi_to_first_slist_node_path)
+    taxi_to_first_slist_node_path = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
+                             node_list[id_hash_map[x]].cluster_id_belongto) for x in taxi_to_first_slist_node_path]
+    taxi_path.path_node_list =  taxi_to_first_slist_node_path + taxi_path.path_node_list
     # 加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     sum_path_distance += get_shortest_path_length(
-        taxi_pos_node, taxi_path.path_node_list[0][0])
+        taxi_pos_node, taxi_path.path_node_list[0].node_id)
     # 加上了taxi目前位置到slist第一个节点的路径长度,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     path_cost = sum_path_distance / TYPICAL_SPEED
@@ -520,13 +522,14 @@ now_time = 0
 
 
 def main():
+    print('asd')
     global now_time
     req_cnt = 0
     system_init()
     order_index = 0
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
-        input('我在518行，按下回车开始')
+        # input('我在518行，按下回车开始')
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET
@@ -536,7 +539,7 @@ def main():
             continue
         else:
             for req_item in tqdm(reqs, desc='Processing requests...'):
-                input('新来一个订单，按下回车继续')
+                # input('新来一个订单，按下回车继续')
                 print('现在时间：{}'.format(now_time))
                 end_time = req_item[1] + \
                     datetime.timedelta(minutes=15).seconds

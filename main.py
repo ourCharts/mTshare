@@ -80,6 +80,20 @@ def request_fetcher(time_slot_start, time_slot_end):
 
 def update(request):
     print('In update')
+    global now_time
+    aux_dict = {}
+    print('req_to_taxi_map is {}'.format(req_to_taxi_map))
+    for req_id in req_to_taxi_map.keys():
+        print('line 86')
+        print(request_list[req_id].delivery_deadline)
+        print(now_time)
+        if request_list[req_id].delivery_deadline > now_time:
+            print('可以啊!!!!')
+            aux_dict[req_id] = req_to_taxi_map[req_id]
+    req_to_taxi_map.clear()
+    for req_id in aux_dict.keys():
+        print('filling!!')
+        req_to_taxi_map[req_id] = aux_dict[req_id]
     for taxi_it in taxi_list:
         taxi_it.update_status(request.release_time)
     mobility_cluster.clear()
@@ -226,7 +240,13 @@ def taxi_req_matching(req: Request):
             print('IT\'S TYPE IS TAXI!!!!!!!!!!')
             C_li.append(it.ID)
         else:
-            print('FUCK')
+            print(req_to_taxi_map)
+            if not it.ID in req_to_taxi_map:
+                continue
+            # 此时的类型为req
+            print('现在的mv类型是req, 这个req的id是{}, 它对应的taxi的id是{}'.format(it.ID, req_to_taxi_map[it.ID]))
+            C_li.append(req_to_taxi_map[it.ID])
+            
 
     print('C_li is: ')
     print(C_li)
@@ -426,8 +446,9 @@ def possibility_routing(Slist, taxi_it):
     return 1, 2
 
 
-def taxi_scheduling(candidate_taxi_list, req, mode=1):
+def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
     print('In taxi scheduling')
+    print('req_id is {}'.format(req_id))
     possible_insertion = []
     minimum_cost = 10 ** 10
     selected_taxi = -1
@@ -471,6 +492,11 @@ def taxi_scheduling(candidate_taxi_list, req, mode=1):
 
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
     taxi_list[selected_taxi].seat_left -= 1
+    req_to_taxi_map[req_id] = selected_taxi
+    print('现在在第489行')
+    print('req_to_taxi_map[req_id] = {}'.format(req_to_taxi_map[req_id]))
+    print('req_id = {}'.format(req_id))
+
     if not selected_taxi_path:
         taxi_list[selected_taxi].path.path_node_list = []
         return selected_taxi, None
@@ -578,9 +604,9 @@ def main():
                 # 如果没有候选taxi会返回none
                 # print(candidate_taxi_list is None)
                 if len(candidate_taxi_list) != 0:
-                    chosen_taxi,cost = taxi_scheduling(candidate_taxi_list, req_item, 1)
+                    chosen_taxi,cost = taxi_scheduling(candidate_taxi_list, req_item, req_item.request_id, 1)
                 else:
-                    chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, 1)
+                    chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, req_item.request_id, 1)
                 show_taxi = taxi_list[chosen_taxi]
                 print('这个订单选中的taxi是{}'.format(chosen_taxi))
                 show_taxi.show_schedule()

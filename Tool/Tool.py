@@ -6,6 +6,7 @@ import networkx as nx
 import time
 map_file = open('./data/map.pickle', 'rb')
 osm_map = pickle.load(map_file)  # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
+req_to_taxi_map = {} # req的id映射到taxi的id
 
 map_file.close()
 tool_node_list = []

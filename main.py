@@ -119,8 +119,11 @@ def update(request):
 
     for taxi_it in taxi_list:
         vec2 = taxi_it.mobility_vector
+        if vec2 != None:
+            print('第123行:taxi_it.mobility_vector is {}'.format(taxi_it.mobility_vector))
         if vec2 == None or taxi_it.seat_left == taxi_it.capability:
             continue
+        print('第126行：~~~~~~~~~~~~~~')
         max_cos = -2
         max_idx = -1
         flag = False
@@ -130,9 +133,11 @@ def update(request):
             if cos_val > max_cos:
                 max_cos = cos_val
                 max_idx = idx
+        print('max_cos = {}'.format(max_cos))
         if max_cos >= Lambda:
             flag = True
         if flag:
+            print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
             mobility_cluster[max_idx].append(MobilityVector(
                 vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
             x = y = z = w = 0
@@ -145,6 +150,7 @@ def update(request):
             general_mobility_vector[max_idx] = MobilityVector(
                 x / leng, y / leng, z / leng, w / leng, 'TAXI', taxi_it.taxi_id)
         else:
+            print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
             mobility_cluster.append(
                 [MobilityVector(vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id)])
             general_mobility_vector.append(MobilityVector(
@@ -197,9 +203,11 @@ def taxi_req_matching(req: Request):
     vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
     max_cos = -2
     max_idx = -1
+    print('General_mobility_vector:{}'.format(general_mobility_vector))
     for idx, gene_v in enumerate(general_mobility_vector):
         cos_val = cosine_similarity(
             [gene_v.lon1, gene_v.lat1, gene_v.lon2, gene_v.lat2], vec)
+        print('余弦相似度是：{}'.format(cos_val))
         if cos_val > max_cos:
             max_cos = cos_val
             max_idx = idx
@@ -211,12 +219,22 @@ def taxi_req_matching(req: Request):
     '''
     # 计算出CaLt
     C = mobility_cluster[max_idx]
+    print('C is: {}'.format(C))
+    # print(C)
     C_li = []
     for it in C:
         if it.vector_type == 'TAXI':
+            print('IT\'S TYPE IS TAXI!!!!!!!!!!')
             C_li.append(it.ID)
-    best_candidate_taxi = set(taxi_in_intersected).intersection(
-        set(C_li))  # 取交集, 计算出所有候选taxi的list
+        else:
+            print('FUCK')
+    print('taxi_in_intersected is: ')
+    print(taxi_in_intersected)
+
+    print('C_li is: ')
+    print(C_li)
+    
+    best_candidate_taxi = set(taxi_in_intersected).intersection(set(C_li))  # 取交集, 计算出所有候选taxi的list
     secondary_candidate_taxi = set(taxi_in_intersected).difference(set(C_li))
 
     best_candidate_taxi = list(best_candidate_taxi)
@@ -385,10 +403,18 @@ def basic_routing(Slist, taxi_it):
             """
             landmark上的点就是osm地图上的节点, 所以可以直接调用get_shortest_path_length
             """
+            
+
             path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
-        
+        if taxi_it == 8:
+            print('taxi 8的距离：')
+            print(path_distance)
         Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
+        if taxi_it == 8:
+            print('现在时间：{}'.format(now_time))
+            print('taxi 8的时间：')
+            print(Slist[idx+1]['arrival_time'])
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
     taxi_pos_node = ox.get_nearest_node(
@@ -565,8 +591,7 @@ def main():
                 else:
                     chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, 1)
                 show_taxi = taxi_list[chosen_taxi]
-                print(chosen_taxi)
-                print(show_taxi.path.path_node_list)
+                print('这个订单选中的taxi是{}'.format(chosen_taxi))
                 show_taxi.show_schedule()
                 print('末尾末尾-----------------------------------------')
 

@@ -71,6 +71,9 @@ class Taxi:
         print('after updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))
         self.partition_id_belongto = check_in_which_partition(
             self.cur_lon, self.cur_lat)
+        print('这里是74行-------------------------------')
+        self.show_schedule()
+        print('这里是74行-------------------------------')
         if self.path.is_over(moment) == -1 or len(self.schedule_list) == 0:
             self.path = Path()
             self.schedule_list = [{'request_id': -1, 'schedule_type': 'NO_ORDER',
@@ -82,11 +85,14 @@ class Taxi:
         # mobility-vector的更新
         average_lon = average_lat = 0
         sum_item = 0
-        if self.taxi_id == 62:
-            self.show_schedule()
+        print()
+        self.show_schedule()
         for sch_node in self.schedule_list:
+            print('DDDDDDDDDDDDDDDDDD')
+            print('schedule_type is {}'.format(sch_node['schedule_type']))
             if sch_node['schedule_type'] != 'ARRIVAL':
                 continue
+            print('line 89!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             average_lat += sch_node['lon']
             average_lon += sch_node['lat']
             sum_item += 1

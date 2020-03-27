@@ -18,6 +18,7 @@ class Path:
         for node in self.path_node_list:
             print(node.lon,node.lat)
 
+
     def get_position(self, moment):
         index = self.is_over(moment)
         if index == -1:

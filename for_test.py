@@ -1,4 +1,2 @@
-arr = 'asd'
-print(type(arr))
-if (type(arr) == int):
-    print(True)
+import time
+print(time.time())

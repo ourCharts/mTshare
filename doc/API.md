@@ -75,7 +75,7 @@
 
 * create_time：float，路径的创建时间的时间戳
 
-* path_node_list：list，存放node对象，路径上道路节点的真实id
+* path_node_list：list，存放路径上道路节点的真实id
 
 
 

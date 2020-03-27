@@ -49,11 +49,11 @@ def check_in_which_partition(lon, lat):
 
 
 def get_shortest_path_node(node1, node2):
-    return nx.shortest_path(osm_map, source=node1, target=node2)
+    return nx.shortest_path(osm_map, source=node1, target=node2, weight='length')
 
 
 def get_shortest_path_length(node1, node2):
-    return nx.shortest_path_length(osm_map, source=node1, target=node2)
+    return nx.shortest_path_length(osm_map, source=node1, target=node2, weight='length')
 
 
 # 余弦相似度

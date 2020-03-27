@@ -139,7 +139,7 @@ def update(request):
         if flag:
             print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
             mobility_cluster[max_idx].append(MobilityVector(
-                vec2[0], vec2[1], vec2[2], vec2[3], 'TAXI', taxi_it.taxi_id))
+                vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id))
             x = y = z = w = 0
             for it in mobility_cluster[max_idx]:
                 x += it.lon1
@@ -183,7 +183,6 @@ def taxi_req_matching(req: Request):
             continue
         dis = get_shortest_path_length(req_start_node, node_it.node_id)
         if dis <= search_range:
-            print('第{}个点的距离是：{}'.format(idx,dis))
             partition_intersected.add(node_it.cluster_id_belongto)
 
     # 计算出PzLt

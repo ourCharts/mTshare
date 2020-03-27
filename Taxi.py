@@ -44,8 +44,8 @@ class Taxi:
         for idx, schedule_node in enumerate(self.schedule_list):
             if schedule_node['arrival_time'] < moment:
                 del_list.append(idx)
-        for idx in del_list:
-            del self.schedule_list[idx]
+        for i in range(len(del_list),-1,-1):
+            del self.schedule_list[del_list[i]]
 
     def update_status(self, moment):
         # 状态： cur_lon、cur_lon、__last_update_time

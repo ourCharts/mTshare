@@ -30,6 +30,14 @@ class Path:
         for idx, node in enumerate(self.path_node_list):
             if idx == 0:
                 continue
+            print('self.path_node_list[0]:')
+            print(self.path_node_list[0])
+            print('node')
+            print(node)
+            """
+            node和self.path_node_list[0]的数据类型不对
+            !!!!!
+            """
             if drive_distance > get_shortest_path_length(self.path_node_list[0], node):
                 return self.path_node_list[idx-1]
         return -1

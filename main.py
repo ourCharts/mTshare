@@ -409,10 +409,12 @@ def basic_routing(Slist, taxi_it):    # 根据论文P7
 
             path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
 
-        Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
+        Slist[idx+1]['arrival_time'] = Slist[idx]['arrival_time'] + path_distance / TYPICAL_SPEED
 
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
+
+        #这里看不懂就看下面注释
     taxi_pos_node = ox.get_nearest_node(
         osm_map, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
     taxi_to_first_slist_node_path = get_shortest_path_node(
@@ -420,7 +422,7 @@ def basic_routing(Slist, taxi_it):    # 根据论文P7
     taxi_to_first_slist_node_path = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
                              node_list[id_hash_map[x]].cluster_id_belongto) for x in taxi_to_first_slist_node_path]
     taxi_path.path_node_list =  taxi_to_first_slist_node_path + taxi_path.path_node_list
-    # 加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
+    # 看这里：加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     sum_path_distance += get_shortest_path_length(
         taxi_pos_node, taxi_path.path_node_list[0].node_id)
@@ -543,8 +545,9 @@ def main():
             continue
         else:
             for req_item in tqdm(reqs, desc='Processing requests...'):
-                input('新来一个订单，按下回车继续')
-                
+                print('**********************************************************************')
+                print('**************************新订单**************************************')
+                print('**********************************************************************')
                 end_time = req_item[1] + \
                     datetime.timedelta(minutes=15).seconds
                 """

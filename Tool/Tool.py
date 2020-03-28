@@ -27,6 +27,15 @@ def rad(deg):
     return (deg / 180.0) * math.pi
 
 
+def divide_group1():
+    print()
+    print("------------------------------------")
+
+
+def divide_group2():
+    print("------------------------------------")
+    print()
+
 def get_distance(lon1, lat1, lon2, lat2):
     EARTH_RADIUS = 6378.137
     rad_lat1 = rad(lat1)

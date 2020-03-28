@@ -79,20 +79,17 @@ def request_fetcher(time_slot_start, time_slot_end):
 
 
 def update(request):
+    divide_group1()
     print('In update')
     global now_time
     aux_dict = {}
     print('req_to_taxi_map is {}'.format(req_to_taxi_map))
+    
     for req_id in req_to_taxi_map.keys():
-        print('line 86')
-        print(request_list[req_id].delivery_deadline)
-        print(now_time)
         if request_list[req_id].delivery_deadline > now_time:
-            print('可以啊!!!!')
             aux_dict[req_id] = req_to_taxi_map[req_id]
     req_to_taxi_map.clear()
     for req_id in aux_dict.keys():
-        print('filling!!')
         req_to_taxi_map[req_id] = aux_dict[req_id]
     for taxi_it in taxi_list:
         taxi_it.update_status(request.release_time)
@@ -133,11 +130,8 @@ def update(request):
 
     for taxi_it in taxi_list:
         vec2 = taxi_it.mobility_vector
-        if vec2 != None:
-            print('第123行:taxi_it.mobility_vector is {}'.format(taxi_it.mobility_vector))
         if vec2 == None or taxi_it.seat_left == taxi_it.capability:
             continue
-        print('第126行：~~~~~~~~~~~~~~')
         max_cos = -2
         max_idx = -1
         flag = False
@@ -147,11 +141,10 @@ def update(request):
             if cos_val > max_cos:
                 max_cos = cos_val
                 max_idx = idx
-        print('max_cos = {}'.format(max_cos))
         if max_cos >= Lambda:
             flag = True
         if flag:
-            print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
+            print('136行在已有cluster里面增加了TAXI的mv~~~~~~~~~~~~~·')
             mobility_cluster[max_idx].append(MobilityVector(
                 vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id))
             x = y = z = w = 0
@@ -164,11 +157,12 @@ def update(request):
             general_mobility_vector[max_idx] = MobilityVector(
                 x / leng, y / leng, z / leng, w / leng, 'TAXI', taxi_it.taxi_id)
         else:
-            print('136行增加了TAXI的mv~~~~~~~~~~~~~·')
+            print('163 行增加了新的m-cluster---')
             mobility_cluster.append(
                 [MobilityVector(vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id)])
             general_mobility_vector.append(MobilityVector(
                 vec2.lon1, vec2.lat1, vec2.lon2, vec2.lat2, 'TAXI', taxi_it.taxi_id))
+    
 
     # 重置partition
     global partition_list
@@ -177,9 +171,11 @@ def update(request):
     for taxi_it in taxi_list:
         partition_list[taxi_it.partition_id_belongto].taxi_list.append(
             int(taxi_it.taxi_id))
+    divide_group2()
 
 
 def taxi_req_matching(req: Request):
+    divide_group1()
     print('In taxi req matching')
     u_lon, u_lat = req.start_lon, req.start_lat
     v_lon, v_lat = req.end_lon, req.end_lat
@@ -197,6 +193,7 @@ def taxi_req_matching(req: Request):
             continue
         dis = get_shortest_path_length(req_start_node, node_it.node_id)
         if dis <= search_range:
+            print('第{}个点的距离：{}'.format(idx,dis))
             partition_intersected.add(node_it.cluster_id_belongto)
 
     # 计算出PzLt
@@ -204,9 +201,6 @@ def taxi_req_matching(req: Request):
     for it in partition_intersected:
         # partion对象中的taxi_list放的是taxi的id
         for taxi_it in partition_list[it].taxi_list:
-            """
-            bug: partition_intersected中的taxi都是一样的
-            """
             if taxi_list[taxi_it].is_available:
                 # 全局的taxi_list中放的是taxi对象, 故taxi_list[taxi_it].taxi_id是taxi的id
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
@@ -216,7 +210,6 @@ def taxi_req_matching(req: Request):
     vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
     max_cos = -2
     max_idx = -1
-    print('General_mobility_vector:{}'.format(general_mobility_vector))
     for idx, gene_v in enumerate(general_mobility_vector):
         cos_val = cosine_similarity(
             [gene_v.lon1, gene_v.lat1, gene_v.lon2, gene_v.lat2], vec)
@@ -232,7 +225,6 @@ def taxi_req_matching(req: Request):
     '''
     # 计算出CaLt
     C = mobility_cluster[max_idx]
-    print('C is: {}'.format(C))
     # print(C)
     C_li = []
     for it in C:
@@ -256,7 +248,7 @@ def taxi_req_matching(req: Request):
 
     best_candidate_taxi = list(best_candidate_taxi)
     secondary_candidate_taxi = list(secondary_candidate_taxi)
-
+    divide_group2()
     return best_candidate_taxi, secondary_candidate_taxi
     # best_candidate_taxi是mv也符合的车，secondary_candidate_taxi是能到达但mv不符合的车
 
@@ -416,13 +408,9 @@ def basic_routing(Slist, taxi_it):    # 根据论文P7
             
 
             path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
-        # if taxi_it == 8:
-        #     print('taxi 8的距离：')
-        #     print(path_distance)
+
         Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
-        # if taxi_it == 8:
-        #     print('taxi 8到达{}的时间：{}'.format(idx+1,Slist[idx+1]['arrival_time']))
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
     taxi_pos_node = ox.get_nearest_node(
@@ -447,8 +435,9 @@ def possibility_routing(Slist, taxi_it):
 
 
 def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
+    divide_group1()
     print('In taxi scheduling')
-    print('req_id is {}'.format(req_id))
+    print('正在处理的订单是： {}'.format(req_id))
     possible_insertion = []
     minimum_cost = 10 ** 10
     selected_taxi = -1
@@ -466,19 +455,15 @@ def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
                     flag = insertion_feasibility_check(taxi_it, req, i, j)
                     if flag:
                         possible_insertion.append((i, j))
-
         ori_cost = taxi_list[taxi_it].cur_total_cost
         for insertion in possible_insertion:
             Slist = copy.deepcopy(taxi_list[taxi_it].schedule_list)
-
             start_point = {'request_id': req.request_id, 'schedule_type': 'DEPART', 'lon': req.start_lon,
                            'lat': req.start_lat, 'arrival_time': None}  # arrival_time在之后routing的时候确定
             end_point = {'request_id': req.request_id, 'schedule_type': 'ARRIVAL',
                          'lon': req.end_lon, 'lat': req.end_lat, 'arrival_time': None}
-            # print('type of Slist is {}'.format(type(Slist)))
             Slist.insert(insertion[0], start_point)
             Slist.insert(insertion[1], end_point)
-
             if mode:
                 new_path, cost = basic_routing(
                     Slist, taxi_it)  # 写完basic routing就ok了
@@ -493,10 +478,8 @@ def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
     taxi_list[selected_taxi].seat_left -= 1
     req_to_taxi_map[req_id] = selected_taxi
-    print('现在在第489行')
     print('req_to_taxi_map[req_id] = {}'.format(req_to_taxi_map[req_id]))
-    print('req_id = {}'.format(req_id))
-
+    divide_group2()
     if not selected_taxi_path:
         taxi_list[selected_taxi].path.path_node_list = []
         return selected_taxi, None
@@ -551,7 +534,6 @@ def main():
     order_index = 0
     last_time = SYSTEM_INIT_TIME - TIME_OFFSET  # 初始化为开始时间
     while True:
-        input('我在518行，按下回车开始')
         if req_cnt > REQUESTS_TO_PROCESS:
             break
         now_time = time.time() - TIME_OFFSET
@@ -584,33 +566,39 @@ def main():
 
                 req_item = Request(req_cnt, req_item[3], req_item[4], req_item[5],
                                    req_item[6], start_node_id, end_node_id, req_item[1], req_item[2])  # 打车的时候难道还能给你输入的ddl的吗???????????
+                divide_group1()
                 print('现在时间：{}'.format(now_time))
                 print('订单消息：')  
                 print('起点经纬度：{}  {},终点经纬度：{}  {}'.format(req_item.start_lon,req_item.start_lat,req_item.end_lon,req_item.end_lat))
+                divide_group2()
                 req_cnt += 1
                 req_item.config_pickup_deadline(
                     req_item.delivery_deadline - time_on_tour)
                 request_list.append(req_item)
                 # 用当前moment来更新所有taxi, mobility_cluster和general_cluster
                 update(req_item)
-                print('看看taxi 8的schedule:')
-                taxi_list[8].show_schedule()
                 candidate_taxi_list, secondary_candidate_list = taxi_req_matching(
                     req_item)
+                divide_group1()
                 print('candidate: ')
                 print(candidate_taxi_list)
                 print('secondary: ')
                 print(secondary_candidate_list)
+                divide_group2()
                 # 如果没有候选taxi会返回none
-                # print(candidate_taxi_list is None)
                 if len(candidate_taxi_list) != 0:
                     chosen_taxi,cost = taxi_scheduling(candidate_taxi_list, req_item, req_item.request_id, 1)
+                    if cost == None:
+                        chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, req_item.request_id, 1)
                 else:
                     chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, req_item.request_id, 1)
                 show_taxi = taxi_list[chosen_taxi]
                 print('这个订单选中的taxi是{}'.format(chosen_taxi))
+
                 show_taxi.show_schedule()
-                print('末尾末尾-----------------------------------------')
+                show_taxi.show_pos()
+                print('该订单结束//////////////////////////////////////')
+                divide_group2()
 
 
 

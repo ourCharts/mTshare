@@ -193,7 +193,6 @@ def taxi_req_matching(req: Request):
             continue
         dis = get_shortest_path_length(req_start_node, node_it.node_id)
         if dis <= search_range:
-            print('第{}个点的距离：{}'.format(idx,dis))
             partition_intersected.add(node_it.cluster_id_belongto)
 
     # 计算出PzLt
@@ -206,7 +205,7 @@ def taxi_req_matching(req: Request):
                 taxi_in_intersected.append(taxi_list[taxi_it].taxi_id)
 
     if len(taxi_in_intersected) == 0:  # 在规定时间内没有taxi能来，所以放弃订单
-        return None                    # 放弃订单了
+        return None,None                    # 放弃订单了
     vec = [req.start_lon, req.start_lat, req.end_lon, req.end_lat]
     max_cos = -2
     max_idx = -1
@@ -546,7 +545,7 @@ def main():
         else:
             for req_item in tqdm(reqs, desc='Processing requests...'):
                 print('**********************************************************************')
-                print('**************************新订单**************************************')
+                print('**************************新订单{}**************************************'.format(req_cnt))
                 print('**********************************************************************')
                 end_time = req_item[1] + \
                     datetime.timedelta(minutes=15).seconds
@@ -589,7 +588,12 @@ def main():
                 print(secondary_candidate_list)
                 divide_group2()
                 # 如果没有候选taxi会返回none
-                if len(candidate_taxi_list) != 0:
+                if candidate_taxi_list == None and secondary_candidate_list ==None:
+                    print('这个订单没有taxi')
+                    print('该订单结束//////////////////////////////////////')
+                    input('天啊！居然出现了没有人回应的订单！！！点击回车继续')
+                    divide_group2()                    
+                elif len(candidate_taxi_list) != 0:
                     chosen_taxi,cost = taxi_scheduling(candidate_taxi_list, req_item, req_item.request_id, 1)
                     if cost == None:
                         chosen_taxi,cost = taxi_scheduling(secondary_candidate_list, req_item, req_item.request_id, 1)

@@ -29,6 +29,11 @@ def get_an_order(idx):
 
 
 def system_init():
+    print('type: {}'.format(type(osm_map)))
+    # sub_graph = osm_map.subgraph([4548141057, 4548141062, 4548141067, 1457872913, 4548141073])
+    # E = list(sub_graph.nodes)
+    # print(E)
+    # input()
     print('System Initiating...')
     taxi_table = pd.read_csv('./data/taxi_info_list.csv')
     df = pd.read_csv('./data/node_list_with_cluster.csv')
@@ -398,44 +403,60 @@ def basic_routing(Slist, taxi_it):    # 根据论文P7
         path_distance = 0
         filtered_partition = partition_filter(Slist[idx], Slist[idx+1])
 
-        for index, p_node in enumerate(filtered_partition):
-            if index == len(filtered_partition) - 1:
-                break
-            # 得到partition id在partition_list中的下表
-            node1 = partition_list.index(filtered_partition[index])
-            node1_landmark = landmark_list[node1]
-            # 得到partition id在partition_list中的下表
-            node2 = partition_list.index(filtered_partition[index+1])
-            node2_landmark = landmark_list[node2]
-            length = len(taxi_path.path_node_list)
-            tmp_list = get_shortest_path_node(node_list[node1_landmark[2]].node_id,node_list[node1_landmark[2]].node_id)
+        pre_subgraph_nodes = []
+        for filtered_partition_item in filtered_partition:
+            for node_it in filtered_partition_item.node_list:
+                pre_subgraph_nodes.append(node_list[id_hash_map[node_it]].node_id)
+        pre_subgraph = osm_map.subgraph(pre_subgraph_nodes)
 
-            tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
-                             node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
-            taxi_path.path_node_list[length: ] = tmp_list
-            
+        isolate_cnt = 0
+        non_isolate_nodes = []
+        for it in pre_subgraph.nodes:
+            if nx.is_isolate(pre_subgraph, it):
+                isolate_cnt += 1
+            else:
+                non_isolate_nodes.append(it)
 
-            path_distance += get_shortest_path_length(node_list[node1_landmark[2]].node_id, node_list[node2_landmark[2]].node_id)
-        # if taxi_it == 8:
-        #     print('taxi 8的距离：')
-        #     print(path_distance)
+        subgraph = osm_map.subgraph(non_isolate_nodes)
+        subgraph = nx.MultiGraph(subgraph)
+        # 此时得到的subgraph是没有孤立点, 但仍有多个连通分量的
+
+        components = nx.connected_components(subgraph)
+        to_remove_nodes = []
+        for it in components:
+            if len(it) < 5:
+                to_remove_nodes += [x for x in it]
+        subgraph.remove_nodes_from(to_remove_nodes)
+        # 此时得到的subgraph是没有孤立点, 且只有一个连通分量
+        start_node = ox.get_nearest_node(subgraph, (Slist[idx]['lat'], Slist[idx]['lon']))
+        end_node = ox.get_nearest_node(subgraph, (Slist[idx + 1]['lat'], Slist[idx + 1]['lon']))
+        print('start_node is {}'.format(start_node))
+        print('end_node is {}'.format(end_node))
+
+        tmp_list = nx.dijkstra_path(subgraph, source=start_node, target=end_node, weight='length')
+        tmp_list = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
+                        node_list[id_hash_map[x]].cluster_id_belongto) for x in tmp_list]
+        length = len(taxi_path.path_node_list)
+        taxi_path.path_node_list[length: ] = tmp_list
+        path_distance = nx.dijkstra_path_length(subgraph, source=start_node, target=end_node, weight='length')
+
+
         Slist[idx+1]['arrival_time'] = now_time + path_distance / TYPICAL_SPEED
 
         # if taxi_it == 8:
         #     print('taxi 8到达{}的时间：{}'.format(idx+1,Slist[idx+1]['arrival_time']))
         sum_path_distance += path_distance
         # 获得两个partition的landmark的最短路径
-    taxi_pos_node = ox.get_nearest_node(
-        osm_map, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
-    taxi_to_first_slist_node_path = get_shortest_path_node(
-        taxi_pos_node, taxi_path.path_node_list[0].node_id)
-    taxi_to_first_slist_node_path = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,
-                             node_list[id_hash_map[x]].cluster_id_belongto) for x in taxi_to_first_slist_node_path]
+    taxi_pos_node = ox.get_nearest_node(subgraph, (taxi_list[taxi_it].cur_lon, taxi_list[taxi_it].cur_lat))
+    taxi_to_first_slist_node_path = nx.shortest_path(osm_map, source=taxi_pos_node, target=taxi_path.path_node_list[0].node_id, weight='length')
+    # taxi_to_first_slist_node_path = get_shortest_path_node(taxi_pos_node, taxi_path.path_node_list[0].node_id)
+    taxi_to_first_slist_node_path = [Node(x, node_list[id_hash_map[x]].lon, node_list[id_hash_map[x]].lat,node_list[id_hash_map[x]].cluster_id_belongto) for x in taxi_to_first_slist_node_path]
+    
     taxi_path.path_node_list =  taxi_to_first_slist_node_path + taxi_path.path_node_list
     # 加上了taxi目前位置到slist第一个节点的路径,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
-    sum_path_distance += get_shortest_path_length(
-        taxi_pos_node, taxi_path.path_node_list[0].node_id)
+    sum_path_distance += nx.shortest_path_length(subgraph, source=taxi_pos_node, target=taxi_path.path_node_list[0].node_id, weight='length')
+    # sum_path_distance += get_shortest_path_length(taxi_pos_node, taxi_path.path_node_list[0].node_id)
     # 加上了taxi目前位置到slist第一个节点的路径长度,因为上面的路径是不包括taxi原本位置的，只包括了slist里面的
 
     path_cost = sum_path_distance / TYPICAL_SPEED
@@ -480,8 +501,7 @@ def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
             Slist.insert(insertion[1], end_point)
 
             if mode:
-                new_path, cost = basic_routing(
-                    Slist, taxi_it)  # 写完basic routing就ok了
+                new_path, cost = basic_routing(Slist, taxi_it)  # 写完basic routing就ok了
             else:
                 new_path, cost = possibility_routing(Slist, taxi_it)
             if cost - ori_cost < minimum_cost:
@@ -493,6 +513,7 @@ def taxi_scheduling(candidate_taxi_list, req, req_id, mode=1):
     taxi_list[selected_taxi].schedule_list = copy.deepcopy(res)
     taxi_list[selected_taxi].seat_left -= 1
     req_to_taxi_map[req_id] = selected_taxi
+
     print('现在在第489行')
     print('req_to_taxi_map[req_id] = {}'.format(req_to_taxi_map[req_id]))
     print('req_id = {}'.format(req_id))
@@ -596,12 +617,12 @@ def main():
                 print('看看taxi 8的schedule:')
                 taxi_list[8].show_schedule()
                 candidate_taxi_list, secondary_candidate_list = taxi_req_matching(
-                    req_item)
-                print('candidate: ')
-                print(candidate_taxi_list)
-                print('secondary: ')
+                    req_item) 
+                print('candidate: ') 
+                print(candidate_taxi_list) 
+                print('secondary: ') 
                 print(secondary_candidate_list)
-                # 如果没有候选taxi会返回none
+                                              # 如果没有候选taxi会返回none
                 # print(candidate_taxi_list is None)
                 if len(candidate_taxi_list) != 0:
                     chosen_taxi,cost = taxi_scheduling(candidate_taxi_list, req_item, req_item.request_id, 1)

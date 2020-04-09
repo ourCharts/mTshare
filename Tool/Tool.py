@@ -6,7 +6,7 @@ import networkx as nx
 import time
 map_file = open('./data/map.pickle', 'rb')
 osm_map = pickle.load(map_file)  # osm地图, 在判断距离某个经纬点最近的道路节点时可以使用
-req_to_taxi_map = {} # req的id映射到taxi的id
+req_to_taxi_map = {}  # req的id映射到taxi的id
 
 map_file.close()
 tool_node_list = []
@@ -65,11 +65,11 @@ def cosine_similarity(vec1, vec2):
     result2 = 0.0
     result3 = 0.0
     for i in range(len(x)):
-        result1 += x[i]*y[i]  # sum(X*Y)
-        result2 += x[i]**2  # sum(X*X)
+        result1 += x[i] * y[i]  # sum(X*Y)
+        result2 += x[i] ** 2  # sum(X*X)
         result3 += y[i]**2  # sum(Y*Y)
 
-    return result1/((result2*result3)**0.5)
+    return result1 / ((result2 * result3) ** 0.5)
 
 # def cosine_similarity(vec1, vec2):
 #     x = [vec1[0], vec1[1], vec1[2], vec1[3]]

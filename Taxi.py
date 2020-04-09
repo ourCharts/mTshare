@@ -28,6 +28,9 @@ class Taxi:
         for idx,node in enumerate(self.schedule_list):
             print('{}. {},经纬度：{},{}, 到达时间：{}'.format(idx,node['schedule_type'],node['lon'],node['lat'],node['arrival_time']))
 
+    def show_pos(self):
+        print('Taxi {}的位置是：{}   {}'.format(self.taxi_id,self.cur_lon,self.cur_lat))
+
 
     def show_path_list(self):
         print('showing schedule: This is taxi {}'.format(self.taxi_id))
@@ -48,32 +51,35 @@ class Taxi:
         
         if len(self.schedule_list) == 1 and self.schedule_list[0]['request_id'] == -1:
             return
-        # self.show_schedule()
+        print('taxi {} 正在更新状态：'.format(self.taxi_id))
         del_list =[]
         for idx, schedule_node in enumerate(self.schedule_list):
             if schedule_node['arrival_time'] < moment:
                 del_list.append(idx)
         for i in range(len(del_list)-1,-1,-1):
+            if self.schedule_list[del_list[i]]['schedule_type'] == 'ARRIVAL':
+                self.seat_left += 1
             del self.schedule_list[del_list[i]]
+        print("更新后：")
+        self.show_schedule()
 
     def update_status(self, moment):
         # 状态： cur_lon、cur_lon、__last_update_time
         #		 schedule_list 、partition_id_belongto、mobility_vector
         self.__last_update_time = moment
-              
+        
         self.update_schedule(moment)
+
         # 更新经纬度
         if len(self.path.path_node_list) == 0:
             return
-        print('taxi id is {}'.format(self.taxi_id))
+        print()
+        print('$ taxi id is {}'.format(self.taxi_id))
         print('before updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))
         self.cur_lon, self.cur_lat = self.path.get_position(moment)
         print('after updating, the position is lon: {}, lat: {}'.format(self.cur_lon, self.cur_lat))
         self.partition_id_belongto = check_in_which_partition(
             self.cur_lon, self.cur_lat)
-        print('这里是74行-------------------------------')
-        self.show_schedule()
-        print('这里是74行-------------------------------')
         if self.path.is_over(moment) == -1 or len(self.schedule_list) == 0:
             if self.path.is_over(moment) == -1:
                 print("self.path.is_over(moment)")
@@ -89,14 +95,9 @@ class Taxi:
         # mobility-vector的更新
         average_lon = average_lat = 0
         sum_item = 0
-        print()
-        self.show_schedule()
         for sch_node in self.schedule_list:
-            print('DDDDDDDDDDDDDDDDDD')
-            print('schedule_type is {}'.format(sch_node['schedule_type']))
             if sch_node['schedule_type'] != 'ARRIVAL':
                 continue
-            print('line 89!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             average_lat += sch_node['lon']
             average_lon += sch_node['lat']
             sum_item += 1
